@@ -10,6 +10,7 @@ import {
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { IconLayoutDashboard } from "@tabler/icons-react";
+import { UserMenu } from "@/features/auth/UserMenu";
 
 type NavItem = {
   label: string;
@@ -54,6 +55,7 @@ export function AppShellLayout({ children }: { children: React.ReactNode }) {
             />
             <Text fw={600}>Agency HRM</Text>
           </Group>
+          <UserMenu />
         </Group>
       </AppShell.Header>
 
