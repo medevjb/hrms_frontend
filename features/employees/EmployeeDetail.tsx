@@ -16,8 +16,16 @@ import {
 import { modals } from "@mantine/modals";
 import { notifications } from "@mantine/notifications";
 import { IconAlertCircle } from "@tabler/icons-react";
+import { DateInput } from "@mantine/dates";
 import { PageLoadingSkeleton } from "@/components/ui/PageLoadingSkeleton";
-import { useEmployee, useTransferEmployee, useUpdateEmployeeStatus } from "@/services/employees";
+import { ShiftSelect } from "@/features/shifts/ShiftSelect";
+import {
+  useAssignShift,
+  useEmployee,
+  useTransferEmployee,
+  useUpdateEmployeeStatus,
+} from "@/services/employees";
+import { useCreateShiftOverride } from "@/services/shifts";
 import { useTeams } from "@/services/teams";
 import type { EmployeeStatus } from "@/types/organization";
 import { EmployeeStatusBadge } from "./EmployeeStatusBadge";
@@ -48,9 +56,14 @@ export function EmployeeDetail({ employeeId }: { employeeId: number }) {
   const { data: teams } = useTeams();
   const transferEmployee = useTransferEmployee(employeeId);
   const updateStatus = useUpdateEmployeeStatus(employeeId);
+  const assignShift = useAssignShift(employeeId);
+  const createShiftOverride = useCreateShiftOverride();
 
   const [reason, setReason] = useState("");
   const [pendingStatus, setPendingStatus] = useState<EmployeeStatus | null>(null);
+  const [overrideShiftId, setOverrideShiftId] = useState<string | null>(null);
+  const [overrideDate, setOverrideDate] = useState<string | null>(null);
+  const [overrideReason, setOverrideReason] = useState("");
 
   if (isLoading) return <PageLoadingSkeleton />;
 
@@ -97,6 +110,47 @@ export function EmployeeDetail({ employeeId }: { employeeId: number }) {
     );
   }
 
+  function confirmAssignShift(shiftId: string | null) {
+    if (!shiftId) return;
+
+    modals.openConfirmModal({
+      title: "Assign shift",
+      children: <Text size="sm">Make this {employee!.full_name}&apos;s regular shift?</Text>,
+      labels: { confirm: "Assign", cancel: "Cancel" },
+      onConfirm: () => {
+        assignShift.mutate(
+          { shift_id: Number(shiftId) },
+          {
+            onSuccess: () => notifications.show({ message: "Shift assigned", color: "green" }),
+            onError: () => notifications.show({ message: "Shift assignment failed", color: "red" }),
+          },
+        );
+      },
+    });
+  }
+
+  function submitShiftOverride() {
+    if (!overrideShiftId || !overrideDate || !overrideReason.trim()) return;
+
+    createShiftOverride.mutate(
+      {
+        employee_id: employeeId,
+        shift_id: Number(overrideShiftId),
+        work_date: overrideDate,
+        reason: overrideReason,
+      },
+      {
+        onSuccess: () => {
+          notifications.show({ message: "One-day shift change set", color: "green" });
+          setOverrideShiftId(null);
+          setOverrideDate(null);
+          setOverrideReason("");
+        },
+        onError: () => notifications.show({ message: "Couldn't set the shift change", color: "red" }),
+      },
+    );
+  }
+
   return (
     <Stack gap="lg">
       <Group justify="space-between">
@@ -122,6 +176,7 @@ export function EmployeeDetail({ employeeId }: { employeeId: number }) {
           <InfoField label="Team" value={employee.team?.name} />
           <InfoField label="Team leader" value={employee.team_leader?.full_name} />
           <InfoField label="Operation manager" value={employee.operation_manager?.full_name} />
+          <InfoField label="Shift" value={employee.current_shift?.name} />
         </SimpleGrid>
       </Card>
 
@@ -140,6 +195,39 @@ export function EmployeeDetail({ employeeId }: { employeeId: number }) {
           disabled={transferEmployee.isPending}
           searchable
         />
+      </Card>
+
+      <Card withBorder>
+        <Title order={4} mb="sm">
+          Shift
+        </Title>
+        <ShiftSelect label="Assign regular shift" value={null} onChange={confirmAssignShift} />
+      </Card>
+
+      <Card withBorder>
+        <Title order={4} mb="sm">
+          Temporary shift change
+        </Title>
+        <Text size="sm" c="dimmed" mb="sm">
+          Changes the shift for one specific day only — the regular assignment above is
+          unaffected.
+        </Text>
+        <Stack gap="sm" maw={420}>
+          <ShiftSelect label="Shift for that day" value={overrideShiftId} onChange={setOverrideShiftId} />
+          <DateInput label="Date" value={overrideDate} onChange={setOverrideDate} />
+          <Textarea
+            label="Reason"
+            value={overrideReason}
+            onChange={(event) => setOverrideReason(event.currentTarget.value)}
+          />
+          <Button
+            onClick={submitShiftOverride}
+            disabled={!overrideShiftId || !overrideDate || !overrideReason.trim()}
+            loading={createShiftOverride.isPending}
+          >
+            Set one-day shift change
+          </Button>
+        </Stack>
       </Card>
 
       <Card withBorder>

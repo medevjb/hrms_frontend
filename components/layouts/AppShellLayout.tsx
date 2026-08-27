@@ -11,7 +11,10 @@ import {
 import { useDisclosure } from "@mantine/hooks";
 import {
   IconAffiliate,
+  IconCalendarEvent,
+  IconClock,
   IconLayoutDashboard,
+  IconSettings,
   IconUsers,
 } from "@tabler/icons-react";
 import { UserMenu } from "@/features/auth/UserMenu";
@@ -29,6 +32,9 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Dashboard", href: "/", icon: <IconLayoutDashboard size={18} /> },
   { label: "Employees", href: "/employees", icon: <IconUsers size={18} /> },
   { label: "Departments & Teams", href: "/departments", icon: <IconAffiliate size={18} /> },
+  { label: "Shifts", href: "/shifts", icon: <IconClock size={18} /> },
+  { label: "Holidays", href: "/holidays", icon: <IconCalendarEvent size={18} /> },
+  { label: "Settings", href: "/settings", icon: <IconSettings size={18} /> },
 ];
 
 export function AppShellLayout({ children }: { children: React.ReactNode }) {

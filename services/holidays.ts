@@ -1,0 +1,48 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { browserFetch } from "@/lib/browser-api";
+import type { Holiday, HolidayType } from "@/types/holidays";
+
+export function useHolidays() {
+  return useQuery({
+    queryKey: ["holidays"],
+    queryFn: () => browserFetch<Holiday[]>("/holidays"),
+  });
+}
+
+export type SaveHolidayInput = {
+  title: string;
+  date: string;
+  type: HolidayType;
+  description?: string | null;
+  office_location?: string | null;
+  active?: boolean;
+};
+
+export function useCreateHoliday() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: SaveHolidayInput) =>
+      browserFetch<Holiday>("/holidays", { method: "POST", body: input }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["holidays"] }),
+  });
+}
+
+export function useUpdateHoliday(id: number) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: Partial<SaveHolidayInput>) =>
+      browserFetch<Holiday>(`/holidays/${id}`, { method: "PUT", body: input }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["holidays"] }),
+  });
+}
+
+export function useDeleteHoliday() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: number) => browserFetch<void>(`/holidays/${id}`, { method: "DELETE" }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["holidays"] }),
+  });
+}

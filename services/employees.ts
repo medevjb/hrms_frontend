@@ -108,3 +108,15 @@ export function useTransferEmployee(id: number) {
     },
   });
 }
+
+export function useAssignShift(id: number) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: { shift_id: number; effective_date?: string }) =>
+      browserFetch<Employee>(`/employees/${id}/assign-shift`, { method: "POST", body: input }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["employees"] });
+    },
+  });
+}
