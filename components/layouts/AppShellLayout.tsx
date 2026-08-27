@@ -9,7 +9,11 @@ import {
   Text,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
-import { IconLayoutDashboard } from "@tabler/icons-react";
+import {
+  IconAffiliate,
+  IconLayoutDashboard,
+  IconUsers,
+} from "@tabler/icons-react";
 import { UserMenu } from "@/features/auth/UserMenu";
 
 type NavItem = {
@@ -18,10 +22,13 @@ type NavItem = {
   icon?: React.ReactNode;
 };
 
-// Placeholder nav — each feature module (docs/PRD.md §6.3) adds its own entry
-// here once it ships, gated by the caller's resolved permissions.
+// Each feature module (docs/PRD.md §6.3) adds its own entry here once it
+// ships. TODO(later phase): gate these by the caller's resolved permissions
+// (can(), lib/permissions.ts) rather than showing every link to everyone.
 const NAV_ITEMS: NavItem[] = [
   { label: "Dashboard", href: "/", icon: <IconLayoutDashboard size={18} /> },
+  { label: "Employees", href: "/employees", icon: <IconUsers size={18} /> },
+  { label: "Departments & Teams", href: "/departments", icon: <IconAffiliate size={18} /> },
 ];
 
 export function AppShellLayout({ children }: { children: React.ReactNode }) {
