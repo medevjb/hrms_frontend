@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   Alert,
+  Anchor,
   Button,
   Group,
   PasswordInput,
@@ -188,10 +190,13 @@ export function LoginForm() {
             autoComplete="current-password"
             {...credentialsForm.getInputProps("password")}
           />
-          <Group justify="flex-end">
-            <Button type="submit" loading={submitting} fullWidth>
-              Sign in
-            </Button>
+          <Button type="submit" loading={submitting} fullWidth>
+            Sign in
+          </Button>
+          <Group justify="center">
+            <Anchor component={Link} href="/forgot-password" size="sm">
+              Forgot your password?
+            </Anchor>
           </Group>
         </Stack>
       </form>
