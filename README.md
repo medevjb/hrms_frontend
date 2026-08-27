@@ -1,36 +1,48 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Agency HRM — Frontend
 
-## Getting Started
+Next.js 16 app for the Agency Human Resource Management System. See
+[`docs/PRD.md`](docs/PRD.md) for the full product spec — this file is just enough to get
+running. `docs/architecture.md`, `database.md`, `permissions.md`, and `api.md` are
+quick-reference companions to the PRD.
 
-First, run the development server:
+The companion API lives in a separate repository:
+[`hrms_backend`](https://github.com/medevjb/hrms_backend).
+
+## Stack
+
+Next.js 16 (App Router) · React 19 · TypeScript · Mantine (components/theme) + Tailwind
+v4 (layout utilities only — see `docs/architecture.md`) · TanStack Query · Zod ·
+Playwright
+
+## Setup
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+cp .env.example .env.local   # NEXT_PUBLIC_API_URL — point at the backend's /api/v1
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The backend must be running (`hrms_backend`, `php artisan serve`) for API calls to
+succeed.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Running
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run dev          # http://localhost:3000
+npm run build
+npm run lint
+npx tsc --noEmit
+npm run test:e2e      # Playwright — spins up the dev server itself
+```
 
-## Learn More
+## Layout
 
-To learn more about Next.js, take a look at the following resources:
+```text
+app/            App Router — route groups, layouts, pages
+features/       one folder per domain (employees, attendance, leave, payroll, ...)
+components/     ui/, forms/, tables/, charts/, layouts/ — shared, cross-feature
+lib/            api-client.ts (talks to /api/v1), theme.ts
+e2e/            Playwright specs
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Every HR-facing feature is built here — never in the backend's Inertia `/system`
+console, which is a separate System Admin/DevOps surface (PRD §5.1).
