@@ -1,17 +1,18 @@
 import type { Metadata } from "next";
-import { ColorSchemeScript, mantineHtmlProps } from "@mantine/core";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Plus_Jakarta_Sans, IBM_Plex_Mono } from "next/font/google";
 import { Providers } from "./providers";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const sans = Plus_Jakarta_Sans({
+  variable: "--font-sans",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const mono = IBM_Plex_Mono({
+  variable: "--font-mono",
   subsets: ["latin"],
+  weight: ["400", "500", "600"],
 });
 
 export const metadata: Metadata = {
@@ -21,15 +22,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-      {...mantineHtmlProps}
-    >
-      <head>
-        <ColorSchemeScript defaultColorScheme="auto" />
-      </head>
-      <body className="min-h-full flex flex-col">
+    <html lang="en" className={`${sans.variable} ${mono.variable} h-full antialiased`} suppressHydrationWarning>
+      <body className="min-h-full flex flex-col bg-background text-foreground">
         <Providers>{children}</Providers>
       </body>
     </html>

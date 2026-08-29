@@ -1,12 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { ActionIcon, Badge, Table } from "@mantine/core";
-import { useDisclosure } from "@mantine/hooks";
-import { IconPencil, IconPlus } from "@tabler/icons-react";
+import { PencilIcon, PlusIcon } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { PageLoadingSkeleton } from "@/components/ui/PageLoadingSkeleton";
+import { StatusChip } from "@/components/ui/status-chip";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useDisclosure } from "@/hooks/use-disclosure";
 import { useShifts } from "@/services/shifts";
 import type { Shift } from "@/types/shifts";
 import { SaveShiftModal } from "./SaveShiftModal";
@@ -32,11 +35,10 @@ export function ShiftsList() {
         title="Shifts"
         description="The shift catalogue — start/end times, expected hours, and any shift-specific late grace override."
         actions={
-          <ActionIcon.Group>
-            <ActionIcon variant="filled" onClick={openCreate} size="lg" aria-label="Add shift">
-              <IconPlus size={18} />
-            </ActionIcon>
-          </ActionIcon.Group>
+          <Button onClick={openCreate}>
+            <PlusIcon />
+            Add shift
+          </Button>
         }
       />
 
@@ -49,51 +51,51 @@ export function ShiftsList() {
           action={{ label: "Add shift", onClick: openCreate }}
         />
       ) : (
-        <Table.ScrollContainer minWidth={700}>
-          <Table verticalSpacing="sm" highlightOnHover>
-            <Table.Thead>
-              <Table.Tr>
-                <Table.Th>Name</Table.Th>
-                <Table.Th>Hours</Table.Th>
-                <Table.Th>Expected work</Table.Th>
-                <Table.Th>Late grace</Table.Th>
-                <Table.Th>Status</Table.Th>
-                <Table.Th />
-              </Table.Tr>
-            </Table.Thead>
-            <Table.Tbody>
+        <div className="overflow-hidden rounded-xl border border-border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Hours</TableHead>
+                <TableHead>Expected work</TableHead>
+                <TableHead>Late grace</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {shifts.map((shift) => (
-                <Table.Tr key={shift.id}>
-                  <Table.Td>{shift.name}</Table.Td>
-                  <Table.Td>
+                <TableRow key={shift.id}>
+                  <TableCell className="font-medium">{shift.name}</TableCell>
+                  <TableCell className="font-mono text-sm">
                     {shift.start_time}–{shift.end_time}
                     {shift.is_overnight && (
-                      <Badge ml="xs" size="sm" variant="light" color="grape">
+                      <Badge variant="secondary" className="ml-2 align-middle">
                         Overnight
                       </Badge>
                     )}
-                  </Table.Td>
-                  <Table.Td>{shift.expected_work_minutes} min</Table.Td>
-                  <Table.Td>
+                  </TableCell>
+                  <TableCell className="font-mono text-sm">{shift.expected_work_minutes} min</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
                     {shift.late_grace_minutes === null
                       ? "Organization default"
                       : `${shift.late_grace_minutes} min`}
-                  </Table.Td>
-                  <Table.Td>
-                    <Badge color={shift.active ? "green" : "gray"} variant="light">
+                  </TableCell>
+                  <TableCell>
+                    <StatusChip tone={shift.active ? "success" : "neutral"}>
                       {shift.active ? "Active" : "Inactive"}
-                    </Badge>
-                  </Table.Td>
-                  <Table.Td>
-                    <ActionIcon variant="subtle" onClick={() => openEdit(shift)} aria-label="Edit shift">
-                      <IconPencil size={16} />
-                    </ActionIcon>
-                  </Table.Td>
-                </Table.Tr>
+                    </StatusChip>
+                  </TableCell>
+                  <TableCell>
+                    <Button variant="ghost" size="icon-sm" onClick={() => openEdit(shift)} aria-label="Edit shift">
+                      <PencilIcon />
+                    </Button>
+                  </TableCell>
+                </TableRow>
               ))}
-            </Table.Tbody>
+            </TableBody>
           </Table>
-        </Table.ScrollContainer>
+        </div>
       )}
 
       <SaveShiftModal opened={opened} onClose={close} shift={editing} />

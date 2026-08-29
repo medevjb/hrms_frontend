@@ -1,5 +1,3 @@
-import { Group, Stack, Text, Title } from "@mantine/core";
-
 type PageHeaderProps = {
   title: string;
   description?: string;
@@ -8,16 +6,14 @@ type PageHeaderProps = {
 
 export function PageHeader({ title, description, actions }: PageHeaderProps) {
   return (
-    <Group justify="space-between" align="flex-start" mb="lg" wrap="wrap">
-      <Stack gap={4}>
-        <Title order={2}>{title}</Title>
-        {description && (
-          <Text c="dimmed" size="sm">
-            {description}
-          </Text>
-        )}
-      </Stack>
-      {actions && <Group gap="sm">{actions}</Group>}
-    </Group>
+    <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+      <div className="space-y-1">
+        <h1 className="font-heading text-2xl font-semibold tracking-tight text-foreground">
+          {title}
+        </h1>
+        {description && <p className="text-sm text-muted-foreground">{description}</p>}
+      </div>
+      {actions && <div className="flex items-center gap-2">{actions}</div>}
+    </div>
   );
 }

@@ -69,4 +69,8 @@ export type CurrentUser = {
   two_factor_enabled: boolean;
   roles: string[];
   permissions: PermissionName[];
+  // §142 — organization timezone is authoritative for display everywhere,
+  // not just evaluation; every session carries it, since most employees
+  // don't hold settings.manage to read it from /settings/organization.
+  organization: { timezone: string };
 };

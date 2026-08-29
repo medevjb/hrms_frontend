@@ -1,11 +1,11 @@
-import { Skeleton, Stack } from "@mantine/core";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function PageLoadingSkeleton() {
   return (
-    <Stack gap="md">
-      <Skeleton height={28} width="30%" radius="sm" />
-      <Skeleton height={16} width="50%" radius="sm" />
-      <Skeleton height={200} radius="md" mt="sm" />
-    </Stack>
+    <div className="space-y-4">
+      <Skeleton className="h-7 w-[30%] rounded-md" />
+      <Skeleton className="h-4 w-[50%] rounded-md" />
+      <Skeleton className="mt-2 h-52 rounded-xl" />
+    </div>
   );
 }

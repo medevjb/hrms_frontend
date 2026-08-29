@@ -1,23 +1,34 @@
 "use client";
 
 import { useState } from "react";
-import { ActionIcon, Badge, Group, Table, Text } from "@mantine/core";
-import { useDisclosure } from "@mantine/hooks";
-import { modals } from "@mantine/modals";
-import { notifications } from "@mantine/notifications";
-import { IconPencil, IconPlus, IconTrash } from "@tabler/icons-react";
+import { PencilIcon, Trash2Icon } from "lucide-react";
+import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { PageHeader } from "@/components/ui/PageHeader";
 import { PageLoadingSkeleton } from "@/components/ui/PageLoadingSkeleton";
+import { StatusChip } from "@/components/ui/status-chip";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useDisclosure } from "@/hooks/use-disclosure";
 import { useDeleteHoliday, useHolidays } from "@/services/holidays";
 import type { Holiday } from "@/types/holidays";
 import { SaveHolidayModal } from "./SaveHolidayModal";
 
-const TYPE_COLORS: Record<Holiday["type"], string> = {
-  NATIONAL: "blue",
-  RELIGIOUS: "grape",
-  COMPANY: "teal",
-  OTHER: "gray",
+const TYPE_VARIANT: Record<Holiday["type"], "default" | "secondary" | "outline"> = {
+  NATIONAL: "default",
+  RELIGIOUS: "secondary",
+  COMPANY: "outline",
+  OTHER: "outline",
 };
 
 export function HolidaysList() {
@@ -25,106 +36,95 @@ export function HolidaysList() {
   const deleteHoliday = useDeleteHoliday();
   const [opened, { open, close }] = useDisclosure(false);
   const [editing, setEditing] = useState<Holiday | undefined>(undefined);
-
-  function openCreate() {
-    setEditing(undefined);
-    open();
-  }
+  const [pendingDelete, setPendingDelete] = useState<Holiday | null>(null);
 
   function openEdit(holiday: Holiday) {
     setEditing(holiday);
     open();
   }
 
-  function confirmDelete(holiday: Holiday) {
-    modals.openConfirmModal({
-      title: "Delete holiday",
-      children: <Text size="sm">Remove {holiday.title} from the holiday calendar?</Text>,
-      labels: { confirm: "Delete", cancel: "Cancel" },
-      confirmProps: { color: "red" },
-      onConfirm: () => {
-        deleteHoliday.mutate(holiday.id, {
-          onSuccess: () => notifications.show({ message: "Holiday deleted", color: "green" }),
-          onError: () => notifications.show({ message: "Delete failed", color: "red" }),
-        });
-      },
+  function confirmDelete() {
+    if (!pendingDelete) return;
+
+    deleteHoliday.mutate(pendingDelete.id, {
+      onSuccess: () => toast.success("Holiday deleted"),
+      onError: () => toast.error("Delete failed"),
+      onSettled: () => setPendingDelete(null),
     });
+  }
+
+  if (isLoading) {
+    return <PageLoadingSkeleton />;
   }
 
   return (
     <>
-      <PageHeader
-        title="Holiday calendar"
-        description="Company holidays — feeds the work-day calculation everywhere attendance and overtime need it."
-        actions={
-          <ActionIcon variant="filled" onClick={openCreate} size="lg" aria-label="Add holiday">
-            <IconPlus size={18} />
-          </ActionIcon>
-        }
-      />
-
-      {isLoading ? (
-        <PageLoadingSkeleton />
-      ) : !holidays || holidays.length === 0 ? (
-        <EmptyState
-          title="No holidays yet"
-          description="Add the first holiday to the calendar."
-          action={{ label: "Add holiday", onClick: openCreate }}
-        />
+      {!holidays || holidays.length === 0 ? (
+        <EmptyState title="No holidays yet" description="Add the first holiday to the calendar." />
       ) : (
-        <Table.ScrollContainer minWidth={700}>
-          <Table verticalSpacing="sm" highlightOnHover>
-            <Table.Thead>
-              <Table.Tr>
-                <Table.Th>Title</Table.Th>
-                <Table.Th>Date</Table.Th>
-                <Table.Th>Type</Table.Th>
-                <Table.Th>Status</Table.Th>
-                <Table.Th />
-              </Table.Tr>
-            </Table.Thead>
-            <Table.Tbody>
+        <div className="overflow-hidden rounded-xl border border-border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Title</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {holidays.map((holiday) => (
-                <Table.Tr key={holiday.id}>
-                  <Table.Td>{holiday.title}</Table.Td>
-                  <Table.Td>{holiday.date}</Table.Td>
-                  <Table.Td>
-                    <Badge color={TYPE_COLORS[holiday.type]} variant="light">
-                      {holiday.type}
-                    </Badge>
-                  </Table.Td>
-                  <Table.Td>
-                    <Badge color={holiday.active ? "green" : "gray"} variant="light">
+                <TableRow key={holiday.id}>
+                  <TableCell className="font-medium">{holiday.title}</TableCell>
+                  <TableCell className="font-mono text-sm">{holiday.date}</TableCell>
+                  <TableCell>
+                    <Badge variant={TYPE_VARIANT[holiday.type]}>{holiday.type}</Badge>
+                  </TableCell>
+                  <TableCell>
+                    <StatusChip tone={holiday.active ? "success" : "neutral"}>
                       {holiday.active ? "Active" : "Inactive"}
-                    </Badge>
-                  </Table.Td>
-                  <Table.Td>
-                    <Group gap="xs">
-                      <ActionIcon
-                        variant="subtle"
-                        onClick={() => openEdit(holiday)}
-                        aria-label="Edit holiday"
-                      >
-                        <IconPencil size={16} />
-                      </ActionIcon>
-                      <ActionIcon
-                        variant="subtle"
-                        color="red"
-                        onClick={() => confirmDelete(holiday)}
+                    </StatusChip>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex gap-1">
+                      <Button variant="ghost" size="icon-sm" onClick={() => openEdit(holiday)} aria-label="Edit holiday">
+                        <PencilIcon />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => setPendingDelete(holiday)}
                         aria-label="Delete holiday"
                       >
-                        <IconTrash size={16} />
-                      </ActionIcon>
-                    </Group>
-                  </Table.Td>
-                </Table.Tr>
+                        <Trash2Icon />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
               ))}
-            </Table.Tbody>
+            </TableBody>
           </Table>
-        </Table.ScrollContainer>
+        </div>
       )}
 
       <SaveHolidayModal opened={opened} onClose={close} holiday={editing} />
+
+      <AlertDialog open={pendingDelete !== null} onOpenChange={(open) => !open && setPendingDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete holiday</AlertDialogTitle>
+            <AlertDialogDescription>
+              Remove {pendingDelete?.title} from the holiday calendar?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

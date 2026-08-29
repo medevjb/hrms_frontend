@@ -1,7 +1,7 @@
 "use client";
 
-import { Tabs } from "@mantine/core";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AttendanceSettingsTab } from "./AttendanceSettingsTab";
 import { OrganizationSettingsTab } from "./OrganizationSettingsTab";
 import { OvertimeSettingsTab } from "./OvertimeSettingsTab";
@@ -15,26 +15,26 @@ export function SettingsPage() {
         description="Organization-wide configuration. Nothing here is ever hard-coded elsewhere in the app."
       />
 
-      <Tabs defaultValue="organization" keepMounted={false}>
-        <Tabs.List>
-          <Tabs.Tab value="organization">Organization</Tabs.Tab>
-          <Tabs.Tab value="attendance">Attendance</Tabs.Tab>
-          <Tabs.Tab value="overtime">Overtime</Tabs.Tab>
-          <Tabs.Tab value="payroll">Payroll</Tabs.Tab>
-        </Tabs.List>
+      <Tabs defaultValue="organization">
+        <TabsList>
+          <TabsTrigger value="organization">Organization</TabsTrigger>
+          <TabsTrigger value="attendance">Attendance</TabsTrigger>
+          <TabsTrigger value="overtime">Overtime</TabsTrigger>
+          <TabsTrigger value="payroll">Payroll</TabsTrigger>
+        </TabsList>
 
-        <Tabs.Panel value="organization" pt="lg">
+        <TabsContent value="organization" className="pt-6">
           <OrganizationSettingsTab />
-        </Tabs.Panel>
-        <Tabs.Panel value="attendance" pt="lg">
+        </TabsContent>
+        <TabsContent value="attendance" className="pt-6">
           <AttendanceSettingsTab />
-        </Tabs.Panel>
-        <Tabs.Panel value="overtime" pt="lg">
+        </TabsContent>
+        <TabsContent value="overtime" className="pt-6">
           <OvertimeSettingsTab />
-        </Tabs.Panel>
-        <Tabs.Panel value="payroll" pt="lg">
+        </TabsContent>
+        <TabsContent value="payroll" className="pt-6">
           <PayrollSettingsTab />
-        </Tabs.Panel>
+        </TabsContent>
       </Tabs>
     </>
   );

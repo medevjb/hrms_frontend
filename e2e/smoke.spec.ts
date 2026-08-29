@@ -19,8 +19,8 @@ test("a user can log in, see the shell, and log out", async ({ page }) => {
   await page.getByRole("button", { name: "Sign in" }).click();
 
   await expect(page).toHaveURL("http://localhost:3000/");
-  await expect(page.getByRole("heading", { name: "Agency HRM" })).toBeVisible();
-  await expect(page.locator(".mantine-AppShell-navbar")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Overview" })).toBeVisible();
+  await expect(page.locator('[data-slot="sidebar"]')).toBeVisible();
   await expect(page.getByText("Admin", { exact: true })).toBeVisible();
 
   await page.getByText("Admin", { exact: true }).click();

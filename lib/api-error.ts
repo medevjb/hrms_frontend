@@ -6,6 +6,7 @@ export class ApiError extends Error {
   readonly status: number;
   readonly code: string;
   readonly errors?: Record<string, string[]>;
+  readonly data?: unknown;
 
   constructor(status: number, body: ApiErrorBody) {
     super(body.message);
@@ -13,5 +14,6 @@ export class ApiError extends Error {
     this.status = status;
     this.code = body.code;
     this.errors = body.errors;
+    this.data = body.data;
   }
 }

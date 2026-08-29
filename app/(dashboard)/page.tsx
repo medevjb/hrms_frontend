@@ -1,10 +1,5 @@
-import { PageHeader } from "@/components/ui/PageHeader";
+import { DashboardOverview } from "@/features/dashboard/DashboardOverview";
 
 export default function Home() {
-  return (
-    <PageHeader
-      title="Agency HRM"
-      description="Foundation scaffold — role-specific dashboards (docs/PRD.md §73-§78) land in Phase 10."
-    />
-  );
+  return <DashboardOverview />;
 }

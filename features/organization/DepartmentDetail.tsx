@@ -1,11 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { Anchor, Badge, Button, Group, Table, Text, Title } from "@mantine/core";
-import { useDisclosure } from "@mantine/hooks";
-import { IconPlus } from "@tabler/icons-react";
+import { PlusIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PageLoadingSkeleton } from "@/components/ui/PageLoadingSkeleton";
+import { StatusChip } from "@/components/ui/status-chip";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useDisclosure } from "@/hooks/use-disclosure";
 import { useDepartments } from "@/services/departments";
 import { useTeams } from "@/services/teams";
 import { CreateTeamModal } from "./CreateTeamModal";
@@ -22,23 +24,24 @@ export function DepartmentDetail({ departmentId }: { departmentId: number }) {
   }
 
   if (!department) {
-    return <Text c="dimmed">Department not found.</Text>;
+    return <p className="text-sm text-muted-foreground">Department not found.</p>;
   }
 
   return (
     <>
-      <Group justify="space-between" mb="lg" align="flex-start">
+      <div className="mb-6 flex items-start justify-between gap-4">
         <div>
-          <Title order={2}>{department.name}</Title>
-          <Text c="dimmed">{department.description ?? "No description"}</Text>
-          <Text size="sm" mt={4}>
+          <h1 className="font-heading text-2xl font-semibold tracking-tight">{department.name}</h1>
+          <p className="text-sm text-muted-foreground">{department.description ?? "No description"}</p>
+          <p className="mt-1 text-sm text-foreground">
             Operation Manager: {department.operation_manager?.full_name ?? "Unassigned"}
-          </Text>
+          </p>
         </div>
-        <Button leftSection={<IconPlus size={16} />} onClick={open}>
+        <Button onClick={open}>
+          <PlusIcon />
           Add team
         </Button>
-      </Group>
+      </div>
 
       {!teams || teams.length === 0 ? (
         <EmptyState
@@ -47,36 +50,36 @@ export function DepartmentDetail({ departmentId }: { departmentId: number }) {
           action={{ label: "Add team", onClick: open }}
         />
       ) : (
-        <Table.ScrollContainer minWidth={600}>
-          <Table verticalSpacing="sm" highlightOnHover>
-            <Table.Thead>
-              <Table.Tr>
-                <Table.Th>Team</Table.Th>
-                <Table.Th>Team Leader</Table.Th>
-                <Table.Th>Members</Table.Th>
-                <Table.Th>Status</Table.Th>
-              </Table.Tr>
-            </Table.Thead>
-            <Table.Tbody>
+        <div className="overflow-hidden rounded-xl border border-border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Team</TableHead>
+                <TableHead>Team Leader</TableHead>
+                <TableHead>Members</TableHead>
+                <TableHead>Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {teams.map((team) => (
-                <Table.Tr key={team.id}>
-                  <Table.Td>
-                    <Anchor component={Link} href={`/teams/${team.id}`} size="sm">
+                <TableRow key={team.id}>
+                  <TableCell>
+                    <Link href={`/teams/${team.id}`} className="font-medium text-primary hover:underline">
                       {team.name}
-                    </Anchor>
-                  </Table.Td>
-                  <Table.Td>{team.team_leader?.full_name ?? "—"}</Table.Td>
-                  <Table.Td>{team.member_count ?? 0}</Table.Td>
-                  <Table.Td>
-                    <Badge color={team.active ? "green" : "gray"} variant="light">
+                    </Link>
+                  </TableCell>
+                  <TableCell>{team.team_leader?.full_name ?? "—"}</TableCell>
+                  <TableCell>{team.member_count ?? 0}</TableCell>
+                  <TableCell>
+                    <StatusChip tone={team.active ? "success" : "neutral"}>
                       {team.active ? "Active" : "Inactive"}
-                    </Badge>
-                  </Table.Td>
-                </Table.Tr>
+                    </StatusChip>
+                  </TableCell>
+                </TableRow>
               ))}
-            </Table.Tbody>
+            </TableBody>
           </Table>
-        </Table.ScrollContainer>
+        </div>
       )}
 
       <CreateTeamModal departmentId={departmentId} opened={opened} onClose={close} />

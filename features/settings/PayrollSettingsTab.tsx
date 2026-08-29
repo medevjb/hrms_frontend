@@ -1,15 +1,24 @@
 "use client";
 
 import { useState } from "react";
-import { Alert, Button, NumberInput, Select, Stack } from "@mantine/core";
-import { useForm } from "@mantine/form";
-import { IconAlertCircle } from "@tabler/icons-react";
+import { AlertCircleIcon, CircleCheckIcon } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { FormField } from "@/components/ui/form-field";
+import { Input } from "@/components/ui/input";
 import { PageLoadingSkeleton } from "@/components/ui/PageLoadingSkeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ApiError } from "@/lib/api-error";
 import { usePayrollSettings, useUpdatePayrollSettings } from "@/services/settings";
-import type { PayrollSettings } from "@/types/settings";
+import type { PayrollSettings, SalaryDayCalculationMethod } from "@/types/settings";
 
-const CALCULATION_METHODS = [
+const CALCULATION_METHODS: { value: SalaryDayCalculationMethod; label: string }[] = [
   { value: "FIXED_30_DAYS", label: "Fixed 30 days" },
   { value: "CALENDAR_DAYS", label: "Calendar days in the month" },
   { value: "WORKING_DAYS", label: "Working days in the month" },
@@ -19,10 +28,10 @@ function Form({ initial }: { initial: PayrollSettings }) {
   const update = useUpdatePayrollSettings();
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [values, setValues] = useState(initial);
 
-  const form = useForm({ initialValues: initial });
-
-  async function handleSubmit(values: typeof form.values) {
+  async function handleSubmit(event: React.FormEvent) {
+    event.preventDefault();
     setError(null);
     setSaved(false);
 
@@ -30,48 +39,65 @@ function Form({ initial }: { initial: PayrollSettings }) {
       await update.mutateAsync(values);
       setSaved(true);
     } catch (caught) {
-      if (caught instanceof ApiError) {
-        form.setErrors(
-          Object.fromEntries(
-            Object.entries(caught.errors ?? {}).map(([field, messages]) => [field, messages[0]]),
-          ),
-        );
-        setError(caught.message);
-      } else {
-        setError("Something went wrong. Please try again.");
-      }
+      setError(caught instanceof ApiError ? caught.message : "Something went wrong. Please try again.");
     }
   }
 
   return (
-    <form onSubmit={form.onSubmit(handleSubmit)}>
-      <Stack gap="md" maw={480}>
-        {error && (
-          <Alert color="red" icon={<IconAlertCircle size={18} />}>
-            {error}
-          </Alert>
-        )}
-        {saved && (
-          <Alert color="green" icon={<IconAlertCircle size={18} />}>
-            Saved.
-          </Alert>
-        )}
-        <NumberInput
-          label="Payroll cutoff day"
-          description="Leave blank for a standard 1st-to-month-end period"
+    <form onSubmit={handleSubmit} className="max-w-lg space-y-4">
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircleIcon />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+      {saved && (
+        <Alert className="border-emerald-200 bg-emerald-50 dark:border-emerald-900 dark:bg-emerald-500/10">
+          <CircleCheckIcon className="text-emerald-600 dark:text-emerald-400" />
+          <AlertDescription className="text-emerald-800 dark:text-emerald-300">Saved.</AlertDescription>
+        </Alert>
+      )}
+      <FormField
+        label="Payroll cutoff day"
+        htmlFor="payroll_cutoff_day"
+        description="Leave blank for a standard 1st-to-month-end period"
+      >
+        <Input
+          id="payroll_cutoff_day"
+          type="number"
           min={1}
           max={28}
-          {...form.getInputProps("payroll_cutoff_day")}
+          value={values.payroll_cutoff_day ?? ""}
+          onChange={(e) =>
+            setValues((v) => ({
+              ...v,
+              payroll_cutoff_day: e.target.value === "" ? null : Number(e.target.value),
+            }))
+          }
         />
+      </FormField>
+      <FormField label="Salary day calculation method">
         <Select
-          label="Salary day calculation method"
-          data={CALCULATION_METHODS}
-          {...form.getInputProps("salary_day_calculation_method")}
-        />
-        <Button type="submit" loading={update.isPending}>
-          Save payroll settings
-        </Button>
-      </Stack>
+          value={values.salary_day_calculation_method}
+          onValueChange={(v) =>
+            setValues((cur) => ({ ...cur, salary_day_calculation_method: v as SalaryDayCalculationMethod }))
+          }
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {CALCULATION_METHODS.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </FormField>
+      <Button type="submit" disabled={update.isPending}>
+        Save payroll settings
+      </Button>
     </form>
   );
 }

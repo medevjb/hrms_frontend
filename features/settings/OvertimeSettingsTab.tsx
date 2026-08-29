@@ -1,37 +1,73 @@
 "use client";
 
 import { useState } from "react";
-import { Alert, Button, Group, NumberInput, Select, Stack, Switch } from "@mantine/core";
-import { useForm } from "@mantine/form";
-import { IconAlertCircle } from "@tabler/icons-react";
+import { AlertCircleIcon, CircleCheckIcon } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { FormField } from "@/components/ui/form-field";
+import { Input } from "@/components/ui/input";
 import { PageLoadingSkeleton } from "@/components/ui/PageLoadingSkeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { ApiError } from "@/lib/api-error";
 import { useOvertimeSettings, useUpdateOvertimeSettings } from "@/services/settings";
-import type { OvertimeSettings } from "@/types/settings";
+import type {
+  OvertimeDailySalaryBasis,
+  OvertimeHourlyRateMode,
+  OvertimeSettings,
+} from "@/types/settings";
 
-const SALARY_BASIS = [
+const SALARY_BASIS: { value: OvertimeDailySalaryBasis; label: string }[] = [
   { value: "BASIC", label: "Basic salary" },
   { value: "GROSS", label: "Gross salary" },
 ];
 
-const RATE_MODES = [
+const RATE_MODES: { value: OvertimeHourlyRateMode; label: string }[] = [
   { value: "FIXED", label: "Fixed hourly rate" },
   { value: "SALARY_DERIVED", label: "Derived from salary" },
 ];
+
+function ToggleRow({
+  id,
+  label,
+  checked,
+  onChange,
+  description,
+}: {
+  id: string;
+  label: string;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  description?: string;
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      <Switch id={id} checked={checked} onCheckedChange={onChange} />
+      <label htmlFor={id} className="text-sm font-medium">
+        {label}
+        {description && <span className="ml-1.5 font-normal text-muted-foreground">— {description}</span>}
+      </label>
+    </div>
+  );
+}
 
 function Form({ initial }: { initial: OvertimeSettings }) {
   const update = useUpdateOvertimeSettings();
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
-
-  const form = useForm({
-    initialValues: {
-      ...initial,
-      overtime_hourly_fixed_rate: initial.overtime_hourly_fixed_rate ?? "",
-    },
+  const [values, setValues] = useState({
+    ...initial,
+    overtime_hourly_fixed_rate: initial.overtime_hourly_fixed_rate ?? "",
   });
 
-  async function handleSubmit(values: typeof form.values) {
+  async function handleSubmit(event: React.FormEvent) {
+    event.preventDefault();
     setError(null);
     setSaved(false);
 
@@ -42,71 +78,117 @@ function Form({ initial }: { initial: OvertimeSettings }) {
       });
       setSaved(true);
     } catch (caught) {
-      if (caught instanceof ApiError) {
-        form.setErrors(
-          Object.fromEntries(
-            Object.entries(caught.errors ?? {}).map(([field, messages]) => [field, messages[0]]),
-          ),
-        );
-        setError(caught.message);
-      } else {
-        setError("Something went wrong. Please try again.");
-      }
+      setError(caught instanceof ApiError ? caught.message : "Something went wrong. Please try again.");
     }
   }
 
   return (
-    <form onSubmit={form.onSubmit(handleSubmit)}>
-      <Stack gap="md" maw={480}>
-        {error && (
-          <Alert color="red" icon={<IconAlertCircle size={18} />}>
-            {error}
-          </Alert>
-        )}
-        {saved && (
-          <Alert color="green" icon={<IconAlertCircle size={18} />}>
-            Saved.
-          </Alert>
-        )}
-        <Switch label="Overtime enabled" {...form.getInputProps("overtime_enabled", { type: "checkbox" })} />
-        <Switch
-          label="Weekend overtime enabled"
-          {...form.getInputProps("weekend_overtime_enabled", { type: "checkbox" })}
-        />
-        <Switch
-          label="Holiday overtime enabled"
-          {...form.getInputProps("holiday_overtime_enabled", { type: "checkbox" })}
-        />
-        <Switch
-          label="Hourly overtime enabled"
-          description="Off by default — a full extra day is the default unit"
-          {...form.getInputProps("hourly_overtime_enabled", { type: "checkbox" })}
-        />
-        <NumberInput
-          label="Minutes considered a full overtime day"
+    <form onSubmit={handleSubmit} className="max-w-lg space-y-4">
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircleIcon />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+      {saved && (
+        <Alert className="border-emerald-200 bg-emerald-50 dark:border-emerald-900 dark:bg-emerald-500/10">
+          <CircleCheckIcon className="text-emerald-600 dark:text-emerald-400" />
+          <AlertDescription className="text-emerald-800 dark:text-emerald-300">Saved.</AlertDescription>
+        </Alert>
+      )}
+      <ToggleRow
+        id="overtime_enabled"
+        label="Overtime enabled"
+        checked={values.overtime_enabled}
+        onChange={(v) => setValues((cur) => ({ ...cur, overtime_enabled: v }))}
+      />
+      <ToggleRow
+        id="weekend_overtime_enabled"
+        label="Weekend overtime enabled"
+        checked={values.weekend_overtime_enabled}
+        onChange={(v) => setValues((cur) => ({ ...cur, weekend_overtime_enabled: v }))}
+      />
+      <ToggleRow
+        id="holiday_overtime_enabled"
+        label="Holiday overtime enabled"
+        checked={values.holiday_overtime_enabled}
+        onChange={(v) => setValues((cur) => ({ ...cur, holiday_overtime_enabled: v }))}
+      />
+      <ToggleRow
+        id="hourly_overtime_enabled"
+        label="Hourly overtime enabled"
+        description="off by default — a full extra day is the default unit"
+        checked={values.hourly_overtime_enabled}
+        onChange={(v) => setValues((cur) => ({ ...cur, hourly_overtime_enabled: v }))}
+      />
+      <FormField label="Minutes considered a full overtime day" htmlFor="overtime_full_day_minutes">
+        <Input
+          id="overtime_full_day_minutes"
+          type="number"
           min={1}
-          {...form.getInputProps("overtime_full_day_minutes")}
+          value={values.overtime_full_day_minutes}
+          onChange={(e) => setValues((v) => ({ ...v, overtime_full_day_minutes: Number(e.target.value) }))}
         />
-        <Select label="Daily salary basis" data={SALARY_BASIS} {...form.getInputProps("overtime_daily_salary_basis")} />
-        <Select label="Hourly rate mode" data={RATE_MODES} {...form.getInputProps("overtime_hourly_rate_mode")} />
-        <Group grow>
-          <NumberInput
-            label="Fixed hourly rate"
-            disabled={form.values.overtime_hourly_rate_mode !== "FIXED"}
-            decimalScale={4}
-            {...form.getInputProps("overtime_hourly_fixed_rate")}
+      </FormField>
+      <FormField label="Daily salary basis">
+        <Select
+          value={values.overtime_daily_salary_basis}
+          onValueChange={(v) => setValues((cur) => ({ ...cur, overtime_daily_salary_basis: v as OvertimeDailySalaryBasis }))}
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {SALARY_BASIS.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </FormField>
+      <FormField label="Hourly rate mode">
+        <Select
+          value={values.overtime_hourly_rate_mode}
+          onValueChange={(v) => setValues((cur) => ({ ...cur, overtime_hourly_rate_mode: v as OvertimeHourlyRateMode }))}
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {RATE_MODES.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </FormField>
+      <div className="grid grid-cols-2 gap-4">
+        <FormField label="Fixed hourly rate" htmlFor="overtime_hourly_fixed_rate">
+          <Input
+            id="overtime_hourly_fixed_rate"
+            type="number"
+            step="0.0001"
+            disabled={values.overtime_hourly_rate_mode !== "FIXED"}
+            value={values.overtime_hourly_fixed_rate}
+            onChange={(e) => setValues((v) => ({ ...v, overtime_hourly_fixed_rate: e.target.value }))}
           />
-          <NumberInput
-            label="Hourly multiplier"
-            decimalScale={2}
+        </FormField>
+        <FormField label="Hourly multiplier" htmlFor="overtime_hourly_multiplier">
+          <Input
+            id="overtime_hourly_multiplier"
+            type="number"
+            step="0.01"
             min={0}
-            {...form.getInputProps("overtime_hourly_multiplier")}
+            value={values.overtime_hourly_multiplier}
+            onChange={(e) => setValues((v) => ({ ...v, overtime_hourly_multiplier: e.target.value }))}
           />
-        </Group>
-        <Button type="submit" loading={update.isPending}>
-          Save overtime settings
-        </Button>
-      </Stack>
+        </FormField>
+      </div>
+      <Button type="submit" disabled={update.isPending}>
+        Save overtime settings
+      </Button>
     </form>
   );
 }

@@ -1,15 +1,11 @@
-import { Center, Container } from "@mantine/core";
-
 export default function AuthLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
-    <Center className="flex-1">
-      <Container size="xs" w="100%" py="xl">
-        {children}
-      </Container>
-    </Center>
+    <div className="flex flex-1 items-center justify-center bg-muted/40 px-4 py-12">
+      <div className="w-full max-w-sm">{children}</div>
+    </div>
   );
 }

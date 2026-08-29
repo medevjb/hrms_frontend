@@ -2,18 +2,19 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import {
-  Anchor,
-  Group,
-  Pagination,
-  Select,
-  Table,
-  Text,
-  TextInput,
-} from "@mantine/core";
-import { IconSearch } from "@tabler/icons-react";
+import { ChevronLeftIcon, ChevronRightIcon, SearchIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { Input } from "@/components/ui/input";
 import { PageLoadingSkeleton } from "@/components/ui/PageLoadingSkeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useEmployees } from "@/services/employees";
 import type { EmployeeStatus } from "@/types/organization";
 import { EmployeeStatusBadge } from "./EmployeeStatusBadge";
@@ -30,11 +31,11 @@ const STATUS_OPTIONS: { value: EmployeeStatus; label: string }[] = [
 ];
 
 export function EmployeesTable() {
-  const [status, setStatus] = useState<EmployeeStatus | null>(null);
+  const [status, setStatus] = useState<EmployeeStatus | "all">("all");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
 
-  const { data, isLoading } = useEmployees({ status: status ?? undefined, page });
+  const { data, isLoading } = useEmployees({ status: status === "all" ? undefined : status, page });
 
   if (isLoading) {
     return <PageLoadingSkeleton />;
@@ -49,26 +50,36 @@ export function EmployeesTable() {
 
   return (
     <>
-      <Group mb="md" gap="sm">
-        <TextInput
-          placeholder="Search by name or code"
-          leftSection={<IconSearch size={16} />}
-          value={search}
-          onChange={(event) => setSearch(event.currentTarget.value)}
-          w={280}
-        />
+      <div className="mb-4 flex flex-wrap gap-2">
+        <div className="relative w-64">
+          <SearchIcon className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Search by name or code"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            className="pl-8"
+          />
+        </div>
         <Select
-          placeholder="All statuses"
-          data={STATUS_OPTIONS}
           value={status}
-          onChange={(value) => {
-            setStatus(value as EmployeeStatus | null);
+          onValueChange={(value) => {
+            setStatus(value as EmployeeStatus | "all");
             setPage(1);
           }}
-          clearable
-          w={200}
-        />
-      </Group>
+        >
+          <SelectTrigger className="w-44">
+            <SelectValue placeholder="All statuses" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All statuses</SelectItem>
+            {STATUS_OPTIONS.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
 
       {employees.length === 0 ? (
         <EmptyState
@@ -77,47 +88,65 @@ export function EmployeesTable() {
         />
       ) : (
         <>
-          <Table.ScrollContainer minWidth={700}>
-            <Table verticalSpacing="sm" highlightOnHover>
-              <Table.Thead>
-                <Table.Tr>
-                  <Table.Th>Name</Table.Th>
-                  <Table.Th>Code</Table.Th>
-                  <Table.Th>Designation</Table.Th>
-                  <Table.Th>Department</Table.Th>
-                  <Table.Th>Team</Table.Th>
-                  <Table.Th>Status</Table.Th>
-                </Table.Tr>
-              </Table.Thead>
-              <Table.Tbody>
+          <div className="overflow-hidden rounded-xl border border-border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Code</TableHead>
+                  <TableHead>Designation</TableHead>
+                  <TableHead>Department</TableHead>
+                  <TableHead>Team</TableHead>
+                  <TableHead>Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {employees.map((employee) => (
-                  <Table.Tr key={employee.id}>
-                    <Table.Td>
-                      <Anchor component={Link} href={`/employees/${employee.id}`} size="sm">
+                  <TableRow key={employee.id}>
+                    <TableCell>
+                      <Link href={`/employees/${employee.id}`} className="font-medium text-primary hover:underline">
                         {employee.full_name}
-                      </Anchor>
-                    </Table.Td>
-                    <Table.Td>
-                      <Text size="sm" c="dimmed">
-                        {employee.employee_code}
-                      </Text>
-                    </Table.Td>
-                    <Table.Td>{employee.designation}</Table.Td>
-                    <Table.Td>{employee.department?.name ?? "—"}</Table.Td>
-                    <Table.Td>{employee.team?.name ?? "—"}</Table.Td>
-                    <Table.Td>
+                      </Link>
+                    </TableCell>
+                    <TableCell className="font-mono text-xs text-muted-foreground">
+                      {employee.employee_code}
+                    </TableCell>
+                    <TableCell>{employee.designation}</TableCell>
+                    <TableCell>{employee.department?.name ?? "—"}</TableCell>
+                    <TableCell>{employee.team?.name ?? "—"}</TableCell>
+                    <TableCell>
                       <EmployeeStatusBadge status={employee.status} />
-                    </Table.Td>
-                  </Table.Tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </Table.Tbody>
+              </TableBody>
             </Table>
-          </Table.ScrollContainer>
+          </div>
 
           {data && data.meta.last_page > 1 && (
-            <Group justify="center" mt="md">
-              <Pagination value={page} onChange={setPage} total={data.meta.last_page} />
-            </Group>
+            <div className="mt-4 flex items-center justify-center gap-3">
+              <Button
+                variant="outline"
+                size="icon-sm"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page <= 1}
+                aria-label="Previous page"
+              >
+                <ChevronLeftIcon />
+              </Button>
+              <span className="text-sm text-muted-foreground">
+                Page {data.meta.current_page} of {data.meta.last_page}
+              </span>
+              <Button
+                variant="outline"
+                size="icon-sm"
+                onClick={() => setPage((p) => Math.min(data.meta.last_page, p + 1))}
+                disabled={page >= data.meta.last_page}
+                aria-label="Next page"
+              >
+                <ChevronRightIcon />
+              </Button>
+            </div>
           )}
         </>
       )}

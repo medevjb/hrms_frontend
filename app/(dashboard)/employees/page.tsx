@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { Button } from "@mantine/core";
-import { IconPlus } from "@tabler/icons-react";
+import { PlusIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { EmployeesTable } from "@/features/employees/EmployeesTable";
 
@@ -13,8 +13,11 @@ export default function EmployeesPage() {
         title="Employees"
         description="Everyone in the organization you have visibility into."
         actions={
-          <Button component={Link} href="/employees/new" leftSection={<IconPlus size={16} />}>
-            Invite employee
+          <Button asChild>
+            <Link href="/employees/new">
+              <PlusIcon />
+              Invite employee
+            </Link>
           </Button>
         }
       />

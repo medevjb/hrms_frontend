@@ -2,8 +2,14 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Avatar, Group, Menu, Text, UnstyledButton } from "@mantine/core";
-import { IconChevronDown, IconLogout } from "@tabler/icons-react";
+import { ChevronDownIcon, LogOutIcon } from "lucide-react";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useCurrentUser } from "@/features/auth/CurrentUserContext";
 
 export function UserMenu() {
@@ -19,29 +25,22 @@ export function UserMenu() {
   }
 
   return (
-    <Menu shadow="md" width={200} position="bottom-end">
-      <Menu.Target>
-        <UnstyledButton>
-          <Group gap="xs">
-            <Avatar radius="xl" size="sm">
-              {user.name.charAt(0).toUpperCase()}
-            </Avatar>
-            <Text size="sm" fw={500}>
-              {user.name}
-            </Text>
-            <IconChevronDown size={14} />
-          </Group>
-        </UnstyledButton>
-      </Menu.Target>
-      <Menu.Dropdown>
-        <Menu.Item
-          leftSection={<IconLogout size={16} />}
-          onClick={handleLogout}
-          disabled={loggingOut}
-        >
+    <DropdownMenu>
+      <DropdownMenuTrigger className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50">
+        <Avatar className="size-7">
+          <AvatarFallback className="bg-accent text-xs font-semibold text-accent-foreground">
+            {user.name.charAt(0).toUpperCase()}
+          </AvatarFallback>
+        </Avatar>
+        <span className="font-medium">{user.name}</span>
+        <ChevronDownIcon className="size-3.5 text-muted-foreground" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-48">
+        <DropdownMenuItem onClick={handleLogout} disabled={loggingOut}>
+          <LogOutIcon />
           Log out
-        </Menu.Item>
-      </Menu.Dropdown>
-    </Menu>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

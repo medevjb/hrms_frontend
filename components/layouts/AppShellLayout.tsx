@@ -1,91 +1,23 @@
-"use client";
-
-import {
-  AppShell,
-  Burger,
-  Group,
-  NavLink,
-  ScrollArea,
-  Text,
-} from "@mantine/core";
-import { useDisclosure } from "@mantine/hooks";
-import {
-  IconAffiliate,
-  IconCalendarEvent,
-  IconClock,
-  IconLayoutDashboard,
-  IconSettings,
-  IconUsers,
-} from "@tabler/icons-react";
+import { AppSidebar } from "@/components/layouts/AppSidebar";
+import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { Separator } from "@/components/ui/separator";
+import { CheckInDialog } from "@/features/attendance/CheckInDialog";
 import { UserMenu } from "@/features/auth/UserMenu";
 
-type NavItem = {
-  label: string;
-  href: string;
-  icon?: React.ReactNode;
-};
-
-// Each feature module (docs/PRD.md §6.3) adds its own entry here once it
-// ships. TODO(later phase): gate these by the caller's resolved permissions
-// (can(), lib/permissions.ts) rather than showing every link to everyone.
-const NAV_ITEMS: NavItem[] = [
-  { label: "Dashboard", href: "/", icon: <IconLayoutDashboard size={18} /> },
-  { label: "Employees", href: "/employees", icon: <IconUsers size={18} /> },
-  { label: "Departments & Teams", href: "/departments", icon: <IconAffiliate size={18} /> },
-  { label: "Shifts", href: "/shifts", icon: <IconClock size={18} /> },
-  { label: "Holidays", href: "/holidays", icon: <IconCalendarEvent size={18} /> },
-  { label: "Settings", href: "/settings", icon: <IconSettings size={18} /> },
-];
-
 export function AppShellLayout({ children }: { children: React.ReactNode }) {
-  const [mobileOpened, { toggle: toggleMobile }] = useDisclosure();
-  const [desktopOpened, { toggle: toggleDesktop }] = useDisclosure(true);
-
   return (
-    <AppShell
-      header={{ height: 56 }}
-      navbar={{
-        width: 260,
-        breakpoint: "sm",
-        collapsed: { mobile: !mobileOpened, desktop: !desktopOpened },
-      }}
-      padding="md"
-    >
-      <AppShell.Header>
-        <Group h="100%" px="md" justify="space-between">
-          <Group gap="sm">
-            <Burger
-              opened={mobileOpened}
-              onClick={toggleMobile}
-              hiddenFrom="sm"
-              size="sm"
-            />
-            <Burger
-              opened={desktopOpened}
-              onClick={toggleDesktop}
-              visibleFrom="sm"
-              size="sm"
-            />
-            <Text fw={600}>Agency HRM</Text>
-          </Group>
+    <SidebarProvider>
+      <AppSidebar />
+      <SidebarInset>
+        <header className="flex h-14 shrink-0 items-center gap-2 border-b border-border bg-card px-4">
+          <SidebarTrigger className="-ml-1" />
+          <Separator orientation="vertical" className="mr-1 h-5" />
+          <div className="flex-1" />
           <UserMenu />
-        </Group>
-      </AppShell.Header>
-
-      <AppShell.Navbar p="sm">
-        <AppShell.Section grow component={ScrollArea}>
-          {NAV_ITEMS.map((item) => (
-            <NavLink
-              key={item.href}
-              href={item.href}
-              label={item.label}
-              leftSection={item.icon}
-            />
-          ))}
-        </AppShell.Section>
-      </AppShell.Navbar>
-
-      <AppShell.Main>{children}</AppShell.Main>
-    </AppShell>
+        </header>
+        <main className="flex flex-1 flex-col gap-4 p-4 md:p-6">{children}</main>
+      </SidebarInset>
+      <CheckInDialog />
+    </SidebarProvider>
   );
 }

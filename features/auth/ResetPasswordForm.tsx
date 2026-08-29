@@ -2,17 +2,12 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  Alert,
-  Button,
-  PasswordInput,
-  Stack,
-  Text,
-  Title,
-} from "@mantine/core";
-import { schemaResolver, useForm } from "@mantine/form";
-import { IconAlertCircle } from "@tabler/icons-react";
+import { AlertCircleIcon } from "lucide-react";
 import { z } from "zod";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { FormField } from "@/components/ui/form-field";
+import { PasswordInput } from "@/components/ui/password-input";
 
 const schema = z
   .object({
@@ -24,31 +19,43 @@ const schema = z
     path: ["password_confirmation"],
   });
 
-export function ResetPasswordForm({
-  token,
-  email,
-}: {
-  token: string;
-  email: string;
-}) {
+export function ResetPasswordForm({ token, email }: { token: string; email: string }) {
   const router = useRouter();
+  const [password, setPassword] = useState("");
+  const [passwordConfirmation, setPasswordConfirmation] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const form = useForm({
-    initialValues: { password: "", password_confirmation: "" },
-    validate: schemaResolver(schema, { sync: true }),
-  });
-
-  async function handleSubmit(values: typeof form.values) {
-    setSubmitting(true);
+  async function handleSubmit(event: React.FormEvent) {
+    event.preventDefault();
+    setFieldErrors({});
     setError(null);
 
+    const parsed = schema.safeParse({
+      password,
+      password_confirmation: passwordConfirmation,
+    });
+    if (!parsed.success) {
+      setFieldErrors(
+        Object.fromEntries(
+          Object.entries(parsed.error.flatten().fieldErrors).map(([k, v]) => [k, v?.[0] ?? ""]),
+        ),
+      );
+      return;
+    }
+
+    setSubmitting(true);
     try {
       const response = await fetch("/api/auth/reset-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, email, ...values }),
+        body: JSON.stringify({
+          token,
+          email,
+          password,
+          password_confirmation: passwordConfirmation,
+        }),
       });
 
       if (!response.ok) {
@@ -64,34 +71,45 @@ export function ResetPasswordForm({
   }
 
   return (
-    <Stack gap="md">
-      <Title order={2}>Choose a new password</Title>
-      <Text c="dimmed" size="sm">
-        {email}
-      </Text>
+    <div className="space-y-5">
+      <div className="space-y-1.5">
+        <h1 className="font-heading text-2xl font-semibold tracking-tight">
+          Choose a new password
+        </h1>
+        <p className="text-sm text-muted-foreground">{email}</p>
+      </div>
       {error && (
-        <Alert color="red" icon={<IconAlertCircle size={18} />}>
-          {error}
+        <Alert variant="destructive">
+          <AlertCircleIcon />
+          <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
-      <form onSubmit={form.onSubmit(handleSubmit)}>
-        <Stack gap="md">
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <FormField label="New password" htmlFor="password" error={fieldErrors.password}>
           <PasswordInput
-            label="New password"
+            id="password"
             autoComplete="new-password"
             autoFocus
-            {...form.getInputProps("password")}
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
           />
+        </FormField>
+        <FormField
+          label="Confirm new password"
+          htmlFor="password_confirmation"
+          error={fieldErrors.password_confirmation}
+        >
           <PasswordInput
-            label="Confirm new password"
+            id="password_confirmation"
             autoComplete="new-password"
-            {...form.getInputProps("password_confirmation")}
+            value={passwordConfirmation}
+            onChange={(event) => setPasswordConfirmation(event.target.value)}
           />
-          <Button type="submit" loading={submitting} fullWidth>
-            Reset password
-          </Button>
-        </Stack>
+        </FormField>
+        <Button type="submit" disabled={submitting} className="w-full">
+          Reset password
+        </Button>
       </form>
-    </Stack>
+    </div>
   );
 }

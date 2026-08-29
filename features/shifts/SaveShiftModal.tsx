@@ -1,10 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { Alert, Button, Group, Modal, NumberInput, Stack, Switch, TextInput } from "@mantine/core";
-import { schemaResolver, useForm } from "@mantine/form";
-import { IconAlertCircle } from "@tabler/icons-react";
+import { AlertCircleIcon } from "lucide-react";
 import { z } from "zod";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { FormField } from "@/components/ui/form-field";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { ApiError } from "@/lib/api-error";
 import { useCreateShift, useUpdateShift } from "@/services/shifts";
 import type { Shift } from "@/types/shifts";
@@ -16,35 +26,54 @@ const schema = z.object({
   expected_work_minutes: z.number().min(1, "Must be at least 1 minute"),
 });
 
-export function SaveShiftModal({
-  opened,
-  onClose,
-  shift,
-}: {
-  opened: boolean;
-  onClose: () => void;
-  shift?: Shift;
-}) {
+function initialValues(shift?: Shift) {
+  return shift
+    ? {
+        name: shift.name,
+        start_time: shift.start_time,
+        end_time: shift.end_time,
+        expected_work_minutes: shift.expected_work_minutes,
+        break_minutes: shift.break_minutes,
+        late_grace_minutes: shift.late_grace_minutes?.toString() ?? "",
+        active: shift.active,
+      }
+    : {
+        name: "",
+        start_time: "",
+        end_time: "",
+        expected_work_minutes: 480,
+        break_minutes: 60,
+        late_grace_minutes: "",
+        active: true,
+      };
+}
+
+function ShiftForm({ shift, onClose }: { shift?: Shift; onClose: () => void }) {
   const isEdit = Boolean(shift);
   const createShift = useCreateShift();
   const updateShift = useUpdateShift(shift?.id ?? 0);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [values, setValues] = useState(() => initialValues(shift));
 
-  const form = useForm({
-    initialValues: {
-      name: shift?.name ?? "",
-      start_time: shift?.start_time ?? "",
-      end_time: shift?.end_time ?? "",
-      expected_work_minutes: shift?.expected_work_minutes ?? 480,
-      break_minutes: shift?.break_minutes ?? 60,
-      late_grace_minutes: shift?.late_grace_minutes ?? null,
-      active: shift?.active ?? true,
-    },
-    validate: schemaResolver(schema, { sync: true }),
-  });
+  function set<K extends keyof typeof values>(key: K, value: (typeof values)[K]) {
+    setValues((current) => ({ ...current, [key]: value }));
+  }
 
-  async function handleSubmit(values: typeof form.values) {
+  async function handleSubmit(event: React.FormEvent) {
+    event.preventDefault();
     setError(null);
+    setFieldErrors({});
+
+    const parsed = schema.safeParse(values);
+    if (!parsed.success) {
+      setFieldErrors(
+        Object.fromEntries(
+          Object.entries(parsed.error.flatten().fieldErrors).map(([k, v]) => [k, v?.[0] ?? ""]),
+        ),
+      );
+      return;
+    }
 
     const input = {
       name: values.name,
@@ -52,7 +81,7 @@ export function SaveShiftModal({
       end_time: values.end_time,
       expected_work_minutes: values.expected_work_minutes,
       break_minutes: values.break_minutes,
-      late_grace_minutes: values.late_grace_minutes,
+      late_grace_minutes: values.late_grace_minutes === "" ? null : Number(values.late_grace_minutes),
       active: values.active,
     };
 
@@ -62,11 +91,10 @@ export function SaveShiftModal({
       } else {
         await createShift.mutateAsync(input);
       }
-      form.reset();
       onClose();
     } catch (caught) {
       if (caught instanceof ApiError) {
-        form.setErrors(
+        setFieldErrors(
           Object.fromEntries(
             Object.entries(caught.errors ?? {}).map(([field, messages]) => [field, messages[0]]),
           ),
@@ -81,39 +109,105 @@ export function SaveShiftModal({
   const pending = createShift.isPending || updateShift.isPending;
 
   return (
-    <Modal opened={opened} onClose={onClose} title={isEdit ? "Edit shift" : "New shift"}>
-      <form onSubmit={form.onSubmit(handleSubmit)}>
-        <Stack gap="md">
-          {error && (
-            <Alert color="red" icon={<IconAlertCircle size={18} />}>
-              {error}
-            </Alert>
-          )}
-          <TextInput label="Name" {...form.getInputProps("name")} />
-          <Group grow>
-            <TextInput type="time" label="Start time" {...form.getInputProps("start_time")} />
-            <TextInput type="time" label="End time" {...form.getInputProps("end_time")} />
-          </Group>
-          <Group grow>
-            <NumberInput
-              label="Expected work minutes"
-              min={1}
-              {...form.getInputProps("expected_work_minutes")}
+    <>
+      <DialogHeader>
+        <DialogTitle>{isEdit ? "Edit shift" : "New shift"}</DialogTitle>
+      </DialogHeader>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {error && (
+          <Alert variant="destructive">
+            <AlertCircleIcon />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+        <FormField label="Name" htmlFor="shift_name" error={fieldErrors.name}>
+          <Input id="shift_name" value={values.name} onChange={(e) => set("name", e.target.value)} />
+        </FormField>
+        <div className="grid grid-cols-2 gap-4">
+          <FormField label="Start time" htmlFor="start_time" error={fieldErrors.start_time}>
+            <Input
+              id="start_time"
+              type="time"
+              value={values.start_time}
+              onChange={(e) => set("start_time", e.target.value)}
             />
-            <NumberInput label="Break minutes" min={0} {...form.getInputProps("break_minutes")} />
-          </Group>
-          <NumberInput
-            label="Late grace minutes (shift-specific override)"
-            description="Leave blank to use the organization default"
+          </FormField>
+          <FormField label="End time" htmlFor="end_time" error={fieldErrors.end_time}>
+            <Input
+              id="end_time"
+              type="time"
+              value={values.end_time}
+              onChange={(e) => set("end_time", e.target.value)}
+            />
+          </FormField>
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            label="Expected work minutes"
+            htmlFor="expected_work_minutes"
+            error={fieldErrors.expected_work_minutes}
+          >
+            <Input
+              id="expected_work_minutes"
+              type="number"
+              min={1}
+              value={values.expected_work_minutes}
+              onChange={(e) => set("expected_work_minutes", Number(e.target.value))}
+            />
+          </FormField>
+          <FormField label="Break minutes" htmlFor="break_minutes">
+            <Input
+              id="break_minutes"
+              type="number"
+              min={0}
+              value={values.break_minutes}
+              onChange={(e) => set("break_minutes", Number(e.target.value))}
+            />
+          </FormField>
+        </div>
+        <FormField
+          label="Late grace minutes (shift-specific override)"
+          htmlFor="late_grace_minutes"
+          description="Leave blank to use the organization default"
+        >
+          <Input
+            id="late_grace_minutes"
+            type="number"
             min={0}
-            {...form.getInputProps("late_grace_minutes")}
+            value={values.late_grace_minutes}
+            onChange={(e) => set("late_grace_minutes", e.target.value)}
           />
-          <Switch label="Active" {...form.getInputProps("active", { type: "checkbox" })} />
-          <Button type="submit" loading={pending}>
+        </FormField>
+        <div className="flex items-center gap-2">
+          <Switch id="active" checked={values.active} onCheckedChange={(v) => set("active", v)} />
+          <label htmlFor="active" className="text-sm font-medium">
+            Active
+          </label>
+        </div>
+        <DialogFooter>
+          <Button type="submit" disabled={pending}>
             {isEdit ? "Save changes" : "Create shift"}
           </Button>
-        </Stack>
+        </DialogFooter>
       </form>
-    </Modal>
+    </>
+  );
+}
+
+export function SaveShiftModal({
+  opened,
+  onClose,
+  shift,
+}: {
+  opened: boolean;
+  onClose: () => void;
+  shift?: Shift;
+}) {
+  return (
+    <Dialog open={opened} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent>
+        {opened && <ShiftForm key={shift?.id ?? "new"} shift={shift} onClose={onClose} />}
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -1,5 +1,5 @@
-import { Alert, Stack, Title } from "@mantine/core";
-import { IconAlertCircle } from "@tabler/icons-react";
+import { AlertCircleIcon } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ResetPasswordForm } from "@/features/auth/ResetPasswordForm";
 
 export default async function ResetPasswordPage({
@@ -11,13 +11,16 @@ export default async function ResetPasswordPage({
 
   if (!token || !email) {
     return (
-      <Stack gap="md">
-        <Title order={2}>Invalid reset link</Title>
-        <Alert color="red" icon={<IconAlertCircle size={18} />}>
-          This password reset link is missing required information. Request
-          a new one from the sign-in page.
+      <div className="space-y-5">
+        <h1 className="font-heading text-2xl font-semibold tracking-tight">Invalid reset link</h1>
+        <Alert variant="destructive">
+          <AlertCircleIcon />
+          <AlertDescription>
+            This password reset link is missing required information. Request a new one from
+            the sign-in page.
+          </AlertDescription>
         </Alert>
-      </Stack>
+      </div>
     );
   }
 

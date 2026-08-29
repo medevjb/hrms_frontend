@@ -1,6 +1,13 @@
 "use client";
 
-import { Select } from "@mantine/core";
+import { useId } from "react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useEmployees } from "@/services/employees";
 
 /**
@@ -12,28 +19,33 @@ export function EmployeeSelect({
   label,
   value,
   onChange,
-  clearable = true,
 }: {
   label: string;
   value: string | null;
   onChange: (value: string | null) => void;
-  clearable?: boolean;
 }) {
   const { data, isLoading } = useEmployees({});
+  const id = useId();
 
   return (
-    <Select
-      label={label}
-      placeholder="Select an employee"
-      data={(data?.data ?? []).map((employee) => ({
-        value: String(employee.id),
-        label: `${employee.full_name} (${employee.employee_code})`,
-      }))}
-      value={value}
-      onChange={onChange}
-      disabled={isLoading}
-      searchable
-      clearable={clearable}
-    />
+    <div className="space-y-1.5">
+      {label && (
+        <label htmlFor={id} className="text-sm font-medium">
+          {label}
+        </label>
+      )}
+      <Select value={value ?? undefined} onValueChange={onChange} disabled={isLoading}>
+        <SelectTrigger id={id} className="w-full">
+          <SelectValue placeholder="Select an employee" />
+        </SelectTrigger>
+        <SelectContent>
+          {(data?.data ?? []).map((employee) => (
+            <SelectItem key={employee.id} value={String(employee.id)}>
+              {employee.full_name} ({employee.employee_code})
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
   );
 }

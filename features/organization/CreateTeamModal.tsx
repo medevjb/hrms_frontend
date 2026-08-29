@@ -1,10 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { Alert, Button, Modal, Stack, TextInput } from "@mantine/core";
-import { schemaResolver, useForm } from "@mantine/form";
-import { IconAlertCircle } from "@tabler/icons-react";
+import { AlertCircleIcon } from "lucide-react";
 import { z } from "zod";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { FormField } from "@/components/ui/form-field";
+import { Input } from "@/components/ui/input";
 import { ApiError } from "@/lib/api-error";
 import { useCreateTeam } from "@/services/teams";
 import { EmployeeSelect } from "./EmployeeSelect";
@@ -24,26 +33,39 @@ export function CreateTeamModal({
 }) {
   const createTeam = useCreateTeam();
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [name, setName] = useState("");
+  const [teamLeaderId, setTeamLeaderId] = useState<string | null>(null);
 
-  const form = useForm({
-    initialValues: { name: "", teamLeaderId: null as string | null },
-    validate: schemaResolver(schema, { sync: true }),
-  });
-
-  async function handleSubmit(values: typeof form.values) {
+  function reset() {
+    setName("");
+    setTeamLeaderId(null);
     setError(null);
+    setFieldErrors({});
+  }
+
+  async function handleSubmit(event: React.FormEvent) {
+    event.preventDefault();
+    setError(null);
+    setFieldErrors({});
+
+    const parsed = schema.safeParse({ name });
+    if (!parsed.success) {
+      setFieldErrors({ name: parsed.error.flatten().fieldErrors.name?.[0] ?? "" });
+      return;
+    }
 
     try {
       await createTeam.mutateAsync({
         department_id: departmentId,
-        name: values.name,
-        team_leader_id: values.teamLeaderId ? Number(values.teamLeaderId) : null,
+        name,
+        team_leader_id: teamLeaderId ? Number(teamLeaderId) : null,
       });
-      form.reset();
+      reset();
       onClose();
     } catch (caught) {
       if (caught instanceof ApiError) {
-        form.setErrors(
+        setFieldErrors(
           Object.fromEntries(
             Object.entries(caught.errors ?? {}).map(([field, messages]) => [field, messages[0]]),
           ),
@@ -56,25 +78,29 @@ export function CreateTeamModal({
   }
 
   return (
-    <Modal opened={opened} onClose={onClose} title="New team">
-      <form onSubmit={form.onSubmit(handleSubmit)}>
-        <Stack gap="md">
+    <Dialog open={opened} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>New team</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
-            <Alert color="red" icon={<IconAlertCircle size={18} />}>
-              {error}
+            <Alert variant="destructive">
+              <AlertCircleIcon />
+              <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
-          <TextInput label="Name" {...form.getInputProps("name")} />
-          <EmployeeSelect
-            label="Team Leader"
-            value={form.values.teamLeaderId}
-            onChange={(value) => form.setFieldValue("teamLeaderId", value)}
-          />
-          <Button type="submit" loading={createTeam.isPending}>
-            Create team
-          </Button>
-        </Stack>
-      </form>
-    </Modal>
+          <FormField label="Name" htmlFor="team_name" error={fieldErrors.name}>
+            <Input id="team_name" value={name} onChange={(e) => setName(e.target.value)} />
+          </FormField>
+          <EmployeeSelect label="Team Leader" value={teamLeaderId} onChange={setTeamLeaderId} />
+          <DialogFooter>
+            <Button type="submit" disabled={createTeam.isPending}>
+              Create team
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -1,13 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { Anchor, Badge, Button, Table } from "@mantine/core";
-import { useDisclosure } from "@mantine/hooks";
-import { IconPlus } from "@tabler/icons-react";
+import { PlusIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { PageLoadingSkeleton } from "@/components/ui/PageLoadingSkeleton";
+import { StatusChip } from "@/components/ui/status-chip";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useDepartments } from "@/services/departments";
+import { useDisclosure } from "@/hooks/use-disclosure";
 import { CreateDepartmentModal } from "./CreateDepartmentModal";
 
 export function DepartmentsList() {
@@ -20,7 +22,8 @@ export function DepartmentsList() {
         title="Departments & Teams"
         description="The organizational hierarchy — departments, their teams, and who leads them."
         actions={
-          <Button leftSection={<IconPlus size={16} />} onClick={open}>
+          <Button onClick={open}>
+            <PlusIcon />
             Add department
           </Button>
         }
@@ -35,34 +38,37 @@ export function DepartmentsList() {
           action={{ label: "Add department", onClick: open }}
         />
       ) : (
-        <Table.ScrollContainer minWidth={600}>
-          <Table verticalSpacing="sm" highlightOnHover>
-            <Table.Thead>
-              <Table.Tr>
-                <Table.Th>Name</Table.Th>
-                <Table.Th>Operation Manager</Table.Th>
-                <Table.Th>Status</Table.Th>
-              </Table.Tr>
-            </Table.Thead>
-            <Table.Tbody>
+        <div className="overflow-hidden rounded-xl border border-border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Operation Manager</TableHead>
+                <TableHead>Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {departments.map((department) => (
-                <Table.Tr key={department.id}>
-                  <Table.Td>
-                    <Anchor component={Link} href={`/departments/${department.id}`} size="sm">
+                <TableRow key={department.id}>
+                  <TableCell>
+                    <Link
+                      href={`/departments/${department.id}`}
+                      className="font-medium text-primary hover:underline"
+                    >
                       {department.name}
-                    </Anchor>
-                  </Table.Td>
-                  <Table.Td>{department.operation_manager?.full_name ?? "—"}</Table.Td>
-                  <Table.Td>
-                    <Badge color={department.active ? "green" : "gray"} variant="light">
+                    </Link>
+                  </TableCell>
+                  <TableCell>{department.operation_manager?.full_name ?? "—"}</TableCell>
+                  <TableCell>
+                    <StatusChip tone={department.active ? "success" : "neutral"}>
                       {department.active ? "Active" : "Inactive"}
-                    </Badge>
-                  </Table.Td>
-                </Table.Tr>
+                    </StatusChip>
+                  </TableCell>
+                </TableRow>
               ))}
-            </Table.Tbody>
+            </TableBody>
           </Table>
-        </Table.ScrollContainer>
+        </div>
       )}
 
       <CreateDepartmentModal opened={opened} onClose={close} />

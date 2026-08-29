@@ -1,23 +1,31 @@
 "use client";
 
 import { useState } from "react";
+import { AlertCircleIcon } from "lucide-react";
+import { toast } from "sonner";
 import {
-  Alert,
-  Button,
-  Card,
-  Group,
-  Select,
-  SimpleGrid,
-  Stack,
-  Text,
-  Textarea,
-  Title,
-} from "@mantine/core";
-import { modals } from "@mantine/modals";
-import { notifications } from "@mantine/notifications";
-import { IconAlertCircle } from "@tabler/icons-react";
-import { DateInput } from "@mantine/dates";
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DatePicker } from "@/components/ui/date-picker";
 import { PageLoadingSkeleton } from "@/components/ui/PageLoadingSkeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { ShiftSelect } from "@/features/shifts/ShiftSelect";
 import {
   useAssignShift,
@@ -43,10 +51,8 @@ const STATUS_OPTIONS: { value: EmployeeStatus; label: string }[] = [
 function InfoField({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div>
-      <Text size="xs" c="dimmed">
-        {label}
-      </Text>
-      <Text size="sm">{value ?? "—"}</Text>
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="text-sm text-foreground">{value ?? "—"}</p>
     </div>
   );
 }
@@ -65,33 +71,46 @@ export function EmployeeDetail({ employeeId }: { employeeId: number }) {
   const [overrideDate, setOverrideDate] = useState<string | null>(null);
   const [overrideReason, setOverrideReason] = useState("");
 
+  const [pendingTeamId, setPendingTeamId] = useState<string | null>(null);
+  const [pendingShiftId, setPendingShiftId] = useState<string | null>(null);
+
   if (isLoading) return <PageLoadingSkeleton />;
 
   if (error || !employee) {
     return (
-      <Alert color="red" icon={<IconAlertCircle size={18} />}>
-        This employee couldn&apos;t be found, or you don&apos;t have access to it.
+      <Alert variant="destructive">
+        <AlertCircleIcon />
+        <AlertDescription>
+          This employee couldn&apos;t be found, or you don&apos;t have access to it.
+        </AlertDescription>
       </Alert>
     );
   }
 
-  function confirmTransfer(teamId: string | null) {
-    if (!teamId) return;
+  function confirmTransfer() {
+    if (!pendingTeamId) return;
 
-    modals.openConfirmModal({
-      title: "Transfer employee",
-      children: <Text size="sm">Move {employee!.full_name} to this team?</Text>,
-      labels: { confirm: "Transfer", cancel: "Cancel" },
-      onConfirm: () => {
-        transferEmployee.mutate(
-          { team_id: Number(teamId) },
-          {
-            onSuccess: () => notifications.show({ message: "Employee transferred", color: "green" }),
-            onError: () => notifications.show({ message: "Transfer failed", color: "red" }),
-          },
-        );
+    transferEmployee.mutate(
+      { team_id: Number(pendingTeamId) },
+      {
+        onSuccess: () => toast.success("Employee transferred"),
+        onError: () => toast.error("Transfer failed"),
+        onSettled: () => setPendingTeamId(null),
       },
-    });
+    );
+  }
+
+  function confirmAssignShift() {
+    if (!pendingShiftId) return;
+
+    assignShift.mutate(
+      { shift_id: Number(pendingShiftId) },
+      {
+        onSuccess: () => toast.success("Shift assigned"),
+        onError: () => toast.error("Shift assignment failed"),
+        onSettled: () => setPendingShiftId(null),
+      },
+    );
   }
 
   function submitStatusChange() {
@@ -101,32 +120,13 @@ export function EmployeeDetail({ employeeId }: { employeeId: number }) {
       { status: pendingStatus, reason },
       {
         onSuccess: () => {
-          notifications.show({ message: "Status updated", color: "green" });
+          toast.success("Status updated");
           setReason("");
           setPendingStatus(null);
         },
-        onError: () => notifications.show({ message: "Status update failed", color: "red" }),
+        onError: () => toast.error("Status update failed"),
       },
     );
-  }
-
-  function confirmAssignShift(shiftId: string | null) {
-    if (!shiftId) return;
-
-    modals.openConfirmModal({
-      title: "Assign shift",
-      children: <Text size="sm">Make this {employee!.full_name}&apos;s regular shift?</Text>,
-      labels: { confirm: "Assign", cancel: "Cancel" },
-      onConfirm: () => {
-        assignShift.mutate(
-          { shift_id: Number(shiftId) },
-          {
-            onSuccess: () => notifications.show({ message: "Shift assigned", color: "green" }),
-            onError: () => notifications.show({ message: "Shift assignment failed", color: "red" }),
-          },
-        );
-      },
-    });
   }
 
   function submitShiftOverride() {
@@ -141,120 +141,172 @@ export function EmployeeDetail({ employeeId }: { employeeId: number }) {
       },
       {
         onSuccess: () => {
-          notifications.show({ message: "One-day shift change set", color: "green" });
+          toast.success("One-day shift change set");
           setOverrideShiftId(null);
           setOverrideDate(null);
           setOverrideReason("");
         },
-        onError: () => notifications.show({ message: "Couldn't set the shift change", color: "red" }),
+        onError: () => toast.error("Couldn't set the shift change"),
       },
     );
   }
 
   return (
-    <Stack gap="lg">
-      <Group justify="space-between">
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
         <div>
-          <Title order={2}>{employee.full_name}</Title>
-          <Text c="dimmed">{employee.designation}</Text>
+          <h1 className="font-heading text-2xl font-semibold tracking-tight">
+            {employee.full_name}
+          </h1>
+          <p className="text-sm text-muted-foreground">{employee.designation}</p>
         </div>
         <EmployeeStatusBadge status={employee.status} />
-      </Group>
+      </div>
 
-      <Card withBorder>
-        <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="lg">
+      <Card>
+        <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
           <InfoField label="Employee code" value={employee.employee_code} />
           <InfoField label="Email" value={employee.email} />
           <InfoField label="Phone" value={employee.phone} />
           <InfoField label="Joining date" value={employee.joining_date} />
           <InfoField label="Employment type" value={employee.employment_type.replace("_", " ")} />
-          <InfoField
-            label="Overtime eligible"
-            value={employee.overtime_eligible ? "Yes" : "No"}
-          />
+          <InfoField label="Overtime eligible" value={employee.overtime_eligible ? "Yes" : "No"} />
           <InfoField label="Department" value={employee.department?.name} />
           <InfoField label="Team" value={employee.team?.name} />
           <InfoField label="Team leader" value={employee.team_leader?.full_name} />
           <InfoField label="Operation manager" value={employee.operation_manager?.full_name} />
           <InfoField label="Shift" value={employee.current_shift?.name} />
-        </SimpleGrid>
+        </CardContent>
       </Card>
 
-      <Card withBorder>
-        <Title order={4} mb="sm">
-          Team
-        </Title>
-        <Select
-          label="Transfer to a different team"
-          placeholder="Select a team"
-          data={(teams ?? []).map((team) => ({
-            value: String(team.id),
-            label: `${team.name} (${team.department.name})`,
-          }))}
-          onChange={confirmTransfer}
-          disabled={transferEmployee.isPending}
-          searchable
-        />
+      <Card>
+        <CardHeader>
+          <CardTitle>Team</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Select value={pendingTeamId ?? undefined} onValueChange={setPendingTeamId}>
+            <SelectTrigger className="w-full max-w-sm">
+              <SelectValue placeholder="Transfer to a different team" />
+            </SelectTrigger>
+            <SelectContent>
+              {(teams ?? []).map((team) => (
+                <SelectItem key={team.id} value={String(team.id)}>
+                  {team.name} ({team.department.name})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </CardContent>
       </Card>
 
-      <Card withBorder>
-        <Title order={4} mb="sm">
-          Shift
-        </Title>
-        <ShiftSelect label="Assign regular shift" value={null} onChange={confirmAssignShift} />
+      <Card>
+        <CardHeader>
+          <CardTitle>Shift</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ShiftSelect label="" value={pendingShiftId} onChange={setPendingShiftId} />
+        </CardContent>
       </Card>
 
-      <Card withBorder>
-        <Title order={4} mb="sm">
-          Temporary shift change
-        </Title>
-        <Text size="sm" c="dimmed" mb="sm">
-          Changes the shift for one specific day only — the regular assignment above is
-          unaffected.
-        </Text>
-        <Stack gap="sm" maw={420}>
+      <Card>
+        <CardHeader>
+          <CardTitle>Temporary shift change</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Changes the shift for one specific day only — the regular assignment above is
+            unaffected.
+          </p>
+        </CardHeader>
+        <CardContent className="max-w-sm space-y-3">
           <ShiftSelect label="Shift for that day" value={overrideShiftId} onChange={setOverrideShiftId} />
-          <DateInput label="Date" value={overrideDate} onChange={setOverrideDate} />
-          <Textarea
-            label="Reason"
-            value={overrideReason}
-            onChange={(event) => setOverrideReason(event.currentTarget.value)}
-          />
+          <div className="space-y-1.5">
+            <label htmlFor="override_date" className="text-sm font-medium">
+              Date
+            </label>
+            <DatePicker id="override_date" value={overrideDate} onChange={setOverrideDate} />
+          </div>
+          <div className="space-y-1.5">
+            <label htmlFor="override_reason" className="text-sm font-medium">
+              Reason
+            </label>
+            <Textarea
+              id="override_reason"
+              value={overrideReason}
+              onChange={(e) => setOverrideReason(e.target.value)}
+            />
+          </div>
           <Button
             onClick={submitShiftOverride}
-            disabled={!overrideShiftId || !overrideDate || !overrideReason.trim()}
-            loading={createShiftOverride.isPending}
+            disabled={!overrideShiftId || !overrideDate || !overrideReason.trim() || createShiftOverride.isPending}
           >
             Set one-day shift change
           </Button>
-        </Stack>
+        </CardContent>
       </Card>
 
-      <Card withBorder>
-        <Title order={4} mb="sm">
-          Change status
-        </Title>
-        <Stack gap="sm" maw={420}>
+      <Card>
+        <CardHeader>
+          <CardTitle>Change status</CardTitle>
+        </CardHeader>
+        <CardContent className="max-w-sm space-y-3">
           <Select
-            label="New status"
-            data={STATUS_OPTIONS.filter((option) => option.value !== employee.status)}
-            value={pendingStatus}
-            onChange={(value) => setPendingStatus(value as EmployeeStatus | null)}
-          />
-          <Textarea
-            label="Reason"
-            value={reason}
-            onChange={(event) => setReason(event.currentTarget.value)}
-          />
+            value={pendingStatus ?? undefined}
+            onValueChange={(v) => setPendingStatus(v as EmployeeStatus)}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="New status" />
+            </SelectTrigger>
+            <SelectContent>
+              {STATUS_OPTIONS.filter((option) => option.value !== employee.status).map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <div className="space-y-1.5">
+            <label htmlFor="status_reason" className="text-sm font-medium">
+              Reason
+            </label>
+            <Textarea id="status_reason" value={reason} onChange={(e) => setReason(e.target.value)} />
+          </div>
           <Button
             onClick={submitStatusChange}
-            disabled={!pendingStatus || !reason.trim()}
-            loading={updateStatus.isPending}
+            disabled={!pendingStatus || !reason.trim() || updateStatus.isPending}
           >
             Update status
           </Button>
-        </Stack>
+        </CardContent>
       </Card>
-    </Stack>
+
+      <AlertDialog open={pendingTeamId !== null} onOpenChange={(open) => !open && setPendingTeamId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Transfer employee</AlertDialogTitle>
+            <AlertDialogDescription>
+              Move {employee.full_name} to this team?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmTransfer}>Transfer</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={pendingShiftId !== null} onOpenChange={(open) => !open && setPendingShiftId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Assign shift</AlertDialogTitle>
+            <AlertDialogDescription>
+              Make this {employee.full_name}&apos;s regular shift?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmAssignShift}>Assign</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
   );
 }

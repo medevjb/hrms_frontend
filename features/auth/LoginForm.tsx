@@ -3,42 +3,25 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import {
-  Alert,
-  Anchor,
-  Button,
-  Group,
-  PasswordInput,
-  Stack,
-  Text,
-  TextInput,
-  Title,
-} from "@mantine/core";
-import { schemaResolver, useForm } from "@mantine/form";
-import { IconAlertCircle } from "@tabler/icons-react";
+import { AlertCircleIcon } from "lucide-react";
 import { z } from "zod";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { FormField } from "@/components/ui/form-field";
+import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 
 const credentialsSchema = z.object({
   email: z.string().min(1, "Email is required").email("Enter a valid email address"),
   password: z.string().min(1, "Password is required"),
 });
 
-type Stage =
-  | { kind: "credentials" }
-  | { kind: "two-factor"; challengeId: string };
+type Stage = { kind: "credentials" } | { kind: "two-factor"; challengeId: string };
 
 type ApiErrorBody = {
   message?: string;
   errors?: Record<string, string[]>;
 };
-
-function firstFieldErrors(errors?: Record<string, string[]>) {
-  if (!errors) return {};
-
-  return Object.fromEntries(
-    Object.entries(errors).map(([field, messages]) => [field, messages[0]]),
-  );
-}
 
 async function postJson(path: string, body: unknown) {
   const response = await fetch(path, {
@@ -46,8 +29,7 @@ async function postJson(path: string, body: unknown) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
-  const data = (await response.json().catch(() => ({}))) as ApiErrorBody &
-    Record<string, unknown>;
+  const data = (await response.json().catch(() => ({}))) as ApiErrorBody & Record<string, unknown>;
 
   return { response, data };
 }
@@ -55,24 +37,33 @@ async function postJson(path: string, body: unknown) {
 export function LoginForm() {
   const router = useRouter();
   const [stage, setStage] = useState<Stage>({ kind: "credentials" });
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [code, setCode] = useState("");
+  const [recoveryCode, setRecoveryCode] = useState("");
+  const [useRecoveryCode, setUseRecoveryCode] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [useRecoveryCode, setUseRecoveryCode] = useState(false);
 
-  const credentialsForm = useForm({
-    initialValues: { email: "", password: "" },
-    validate: schemaResolver(credentialsSchema, { sync: true }),
-  });
-
-  const codeForm = useForm({ initialValues: { code: "", recoveryCode: "" } });
-
-  async function handleCredentialsSubmit(values: typeof credentialsForm.values) {
-    setSubmitting(true);
+  async function handleCredentialsSubmit(event: React.FormEvent) {
+    event.preventDefault();
+    setFieldErrors({});
     setError(null);
 
+    const parsed = credentialsSchema.safeParse({ email, password });
+    if (!parsed.success) {
+      setFieldErrors(Object.fromEntries(
+        Object.entries(parsed.error.flatten().fieldErrors).map(([k, v]) => [k, v?.[0] ?? ""]),
+      ));
+      return;
+    }
+
+    setSubmitting(true);
     try {
       const { response, data } = await postJson("/api/auth/login", {
-        ...values,
+        email,
+        password,
         device_name: "web",
       });
 
@@ -82,7 +73,11 @@ export function LoginForm() {
       }
 
       if (!response.ok) {
-        credentialsForm.setErrors(firstFieldErrors(data.errors));
+        setFieldErrors(
+          Object.fromEntries(
+            Object.entries(data.errors ?? {}).map(([field, messages]) => [field, messages[0]]),
+          ),
+        );
         setError(data.message ?? "Login failed. Please try again.");
         return;
       }
@@ -94,7 +89,8 @@ export function LoginForm() {
     }
   }
 
-  async function handleCodeSubmit(values: typeof codeForm.values) {
+  async function handleCodeSubmit(event: React.FormEvent) {
+    event.preventDefault();
     if (stage.kind !== "two-factor") return;
 
     setSubmitting(true);
@@ -103,9 +99,7 @@ export function LoginForm() {
     try {
       const { response, data } = await postJson("/api/auth/two-factor-challenge", {
         challenge_id: stage.challengeId,
-        ...(useRecoveryCode
-          ? { recovery_code: values.recoveryCode }
-          : { code: values.code }),
+        ...(useRecoveryCode ? { recovery_code: recoveryCode } : { code }),
       });
 
       if (!response.ok) {
@@ -122,84 +116,100 @@ export function LoginForm() {
 
   if (stage.kind === "two-factor") {
     return (
-      <Stack gap="md">
-        <Title order={2}>Two-factor verification</Title>
-        <Text c="dimmed" size="sm">
-          {useRecoveryCode
-            ? "Enter one of your recovery codes."
-            : "Enter the code from your authenticator app."}
-        </Text>
+      <div className="space-y-5">
+        <div className="space-y-1.5">
+          <h1 className="font-heading text-2xl font-semibold tracking-tight">
+            Two-factor verification
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            {useRecoveryCode
+              ? "Enter one of your recovery codes."
+              : "Enter the code from your authenticator app."}
+          </p>
+        </div>
         {error && (
-          <Alert color="red" icon={<IconAlertCircle size={18} />}>
-            {error}
+          <Alert variant="destructive">
+            <AlertCircleIcon />
+            <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
-        <form onSubmit={codeForm.onSubmit(handleCodeSubmit)}>
-          <Stack gap="md">
-            {useRecoveryCode ? (
-              <TextInput
-                label="Recovery code"
+        <form onSubmit={handleCodeSubmit} className="space-y-4">
+          {useRecoveryCode ? (
+            <FormField label="Recovery code" htmlFor="recoveryCode">
+              <Input
+                id="recoveryCode"
                 autoFocus
-                {...codeForm.getInputProps("recoveryCode")}
+                value={recoveryCode}
+                onChange={(event) => setRecoveryCode(event.target.value)}
               />
-            ) : (
-              <TextInput
-                label="Authentication code"
+            </FormField>
+          ) : (
+            <FormField label="Authentication code" htmlFor="code">
+              <Input
+                id="code"
                 inputMode="numeric"
                 autoFocus
-                {...codeForm.getInputProps("code")}
+                value={code}
+                onChange={(event) => setCode(event.target.value)}
               />
-            )}
-            <Button type="submit" loading={submitting} fullWidth>
-              Verify
-            </Button>
-            <Button
-              variant="subtle"
-              size="sm"
-              onClick={() => {
-                setUseRecoveryCode((current) => !current);
-                setError(null);
-              }}
-            >
-              {useRecoveryCode ? "Use an authentication code instead" : "Use a recovery code instead"}
-            </Button>
-          </Stack>
+            </FormField>
+          )}
+          <Button type="submit" disabled={submitting} className="w-full">
+            Verify
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="w-full"
+            onClick={() => {
+              setUseRecoveryCode((current) => !current);
+              setError(null);
+            }}
+          >
+            {useRecoveryCode ? "Use an authentication code instead" : "Use a recovery code instead"}
+          </Button>
         </form>
-      </Stack>
+      </div>
     );
   }
 
   return (
-    <Stack gap="md">
-      <Title order={2}>Sign in</Title>
+    <div className="space-y-5">
+      <h1 className="font-heading text-2xl font-semibold tracking-tight">Sign in</h1>
       {error && (
-        <Alert color="red" icon={<IconAlertCircle size={18} />}>
-          {error}
+        <Alert variant="destructive">
+          <AlertCircleIcon />
+          <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
-      <form onSubmit={credentialsForm.onSubmit(handleCredentialsSubmit)}>
-        <Stack gap="md">
-          <TextInput
-            label="Email"
+      <form onSubmit={handleCredentialsSubmit} className="space-y-4">
+        <FormField label="Email" htmlFor="email" error={fieldErrors.email}>
+          <Input
+            id="email"
             autoComplete="username"
             autoFocus
-            {...credentialsForm.getInputProps("email")}
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
           />
+        </FormField>
+        <FormField label="Password" htmlFor="password" error={fieldErrors.password}>
           <PasswordInput
-            label="Password"
+            id="password"
             autoComplete="current-password"
-            {...credentialsForm.getInputProps("password")}
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
           />
-          <Button type="submit" loading={submitting} fullWidth>
-            Sign in
-          </Button>
-          <Group justify="center">
-            <Anchor component={Link} href="/forgot-password" size="sm">
-              Forgot your password?
-            </Anchor>
-          </Group>
-        </Stack>
+        </FormField>
+        <Button type="submit" disabled={submitting} className="w-full">
+          Sign in
+        </Button>
+        <div className="text-center">
+          <Link href="/forgot-password" className="text-sm text-primary hover:underline">
+            Forgot your password?
+          </Link>
+        </div>
       </form>
-    </Stack>
+    </div>
   );
 }

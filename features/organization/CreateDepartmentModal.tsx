@@ -1,10 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { Alert, Button, Modal, Stack, TextInput } from "@mantine/core";
-import { schemaResolver, useForm } from "@mantine/form";
-import { IconAlertCircle } from "@tabler/icons-react";
+import { AlertCircleIcon } from "lucide-react";
 import { z } from "zod";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { FormField } from "@/components/ui/form-field";
+import { Input } from "@/components/ui/input";
 import { ApiError } from "@/lib/api-error";
 import { useCreateDepartment } from "@/services/departments";
 import { EmployeeSelect } from "./EmployeeSelect";
@@ -22,26 +31,41 @@ export function CreateDepartmentModal({
 }) {
   const createDepartment = useCreateDepartment();
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [operationManagerId, setOperationManagerId] = useState<string | null>(null);
 
-  const form = useForm({
-    initialValues: { name: "", description: "", operationManagerId: null as string | null },
-    validate: schemaResolver(schema, { sync: true }),
-  });
-
-  async function handleSubmit(values: typeof form.values) {
+  function reset() {
+    setName("");
+    setDescription("");
+    setOperationManagerId(null);
     setError(null);
+    setFieldErrors({});
+  }
+
+  async function handleSubmit(event: React.FormEvent) {
+    event.preventDefault();
+    setError(null);
+    setFieldErrors({});
+
+    const parsed = schema.safeParse({ name });
+    if (!parsed.success) {
+      setFieldErrors({ name: parsed.error.flatten().fieldErrors.name?.[0] ?? "" });
+      return;
+    }
 
     try {
       await createDepartment.mutateAsync({
-        name: values.name,
-        description: values.description || undefined,
-        operation_manager_id: values.operationManagerId ? Number(values.operationManagerId) : null,
+        name,
+        description: description || undefined,
+        operation_manager_id: operationManagerId ? Number(operationManagerId) : null,
       });
-      form.reset();
+      reset();
       onClose();
     } catch (caught) {
       if (caught instanceof ApiError) {
-        form.setErrors(
+        setFieldErrors(
           Object.fromEntries(
             Object.entries(caught.errors ?? {}).map(([field, messages]) => [field, messages[0]]),
           ),
@@ -54,26 +78,40 @@ export function CreateDepartmentModal({
   }
 
   return (
-    <Modal opened={opened} onClose={onClose} title="New department">
-      <form onSubmit={form.onSubmit(handleSubmit)}>
-        <Stack gap="md">
+    <Dialog open={opened} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>New department</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
-            <Alert color="red" icon={<IconAlertCircle size={18} />}>
-              {error}
+            <Alert variant="destructive">
+              <AlertCircleIcon />
+              <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
-          <TextInput label="Name" {...form.getInputProps("name")} />
-          <TextInput label="Description" {...form.getInputProps("description")} />
+          <FormField label="Name" htmlFor="department_name" error={fieldErrors.name}>
+            <Input id="department_name" value={name} onChange={(e) => setName(e.target.value)} />
+          </FormField>
+          <FormField label="Description" htmlFor="department_description">
+            <Input
+              id="department_description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+          </FormField>
           <EmployeeSelect
             label="Operation Manager"
-            value={form.values.operationManagerId}
-            onChange={(value) => form.setFieldValue("operationManagerId", value)}
+            value={operationManagerId}
+            onChange={setOperationManagerId}
           />
-          <Button type="submit" loading={createDepartment.isPending}>
-            Create department
-          </Button>
-        </Stack>
-      </form>
-    </Modal>
+          <DialogFooter>
+            <Button type="submit" disabled={createDepartment.isPending}>
+              Create department
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }

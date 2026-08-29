@@ -1,5 +1,5 @@
-import { HolidaysList } from "@/features/holidays/HolidaysList";
+import { HolidaysPage } from "@/features/holidays/HolidaysPage";
 
-export default function HolidaysPage() {
-  return <HolidaysList />;
+export default function Holidays() {
+  return <HolidaysPage />;
 }

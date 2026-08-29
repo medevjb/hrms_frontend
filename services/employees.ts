@@ -8,6 +8,7 @@ type EmployeeFilters = {
   team_id?: number;
   department_id?: number;
   page?: number;
+  per_page?: number;
 };
 
 type EmployeeListResult = { data: Employee[]; meta: PaginationMeta };
@@ -18,6 +19,7 @@ function buildQuery(filters: EmployeeFilters): string {
   if (filters.team_id) params.set("filter[team_id]", String(filters.team_id));
   if (filters.department_id) params.set("filter[department_id]", String(filters.department_id));
   if (filters.page) params.set("page", String(filters.page));
+  if (filters.per_page) params.set("per_page", String(filters.per_page));
   const query = params.toString();
   return query ? `?${query}` : "";
 }
