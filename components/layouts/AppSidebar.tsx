@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  AlarmClockIcon,
   Building2Icon,
   CalendarCheckIcon,
   CalendarClockIcon,
@@ -50,6 +51,7 @@ const NAV_GROUPS: NavGroup[] = [
       { label: "Departments & Teams", href: "/departments", icon: Building2Icon },
       { label: "Attendance", href: "/attendance", icon: CalendarCheckIcon },
       { label: "Leave", href: "/leave", icon: CalendarClockIcon },
+      { label: "Overtime", href: "/overtime", icon: AlarmClockIcon },
     ],
   },
   {
