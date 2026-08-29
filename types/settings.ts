@@ -43,6 +43,11 @@ export type PayrollSettings = {
   salary_day_calculation_method: SalaryDayCalculationMethod;
 };
 
+export type LeaveSettings = {
+  leave_year_start_month: number;
+  leave_carry_forward_cap_days: number | null;
+};
+
 export const WEEKDAYS = [
   "monday",
   "tuesday",

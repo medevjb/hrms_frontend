@@ -3,6 +3,7 @@
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AttendanceSettingsTab } from "./AttendanceSettingsTab";
+import { LeaveSettingsTab } from "./LeaveSettingsTab";
 import { OrganizationSettingsTab } from "./OrganizationSettingsTab";
 import { OvertimeSettingsTab } from "./OvertimeSettingsTab";
 import { PayrollSettingsTab } from "./PayrollSettingsTab";
@@ -19,6 +20,7 @@ export function SettingsPage() {
         <TabsList>
           <TabsTrigger value="organization">Organization</TabsTrigger>
           <TabsTrigger value="attendance">Attendance</TabsTrigger>
+          <TabsTrigger value="leave">Leave</TabsTrigger>
           <TabsTrigger value="overtime">Overtime</TabsTrigger>
           <TabsTrigger value="payroll">Payroll</TabsTrigger>
         </TabsList>
@@ -28,6 +30,9 @@ export function SettingsPage() {
         </TabsContent>
         <TabsContent value="attendance" className="pt-6">
           <AttendanceSettingsTab />
+        </TabsContent>
+        <TabsContent value="leave" className="pt-6">
+          <LeaveSettingsTab />
         </TabsContent>
         <TabsContent value="overtime" className="pt-6">
           <OvertimeSettingsTab />

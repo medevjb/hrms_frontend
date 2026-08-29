@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   Building2Icon,
   CalendarCheckIcon,
+  CalendarClockIcon,
   CalendarDaysIcon,
   ClockIcon,
   LayoutDashboardIcon,
@@ -48,6 +49,7 @@ const NAV_GROUPS: NavGroup[] = [
       { label: "Employees", href: "/employees", icon: UsersIcon },
       { label: "Departments & Teams", href: "/departments", icon: Building2Icon },
       { label: "Attendance", href: "/attendance", icon: CalendarCheckIcon },
+      { label: "Leave", href: "/leave", icon: CalendarClockIcon },
     ],
   },
   {

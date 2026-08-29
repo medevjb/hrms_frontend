@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { browserFetch } from "@/lib/browser-api";
 import type {
   AttendanceSettings,
+  LeaveSettings,
   OrganizationSettingsData,
   OvertimeSettings,
   PayrollSettings,
@@ -72,5 +73,22 @@ export function useUpdatePayrollSettings() {
     mutationFn: (input: Partial<PayrollSettings>) =>
       browserFetch<PayrollSettings>("/settings/payroll", { method: "PUT", body: input }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["settings", "payroll"] }),
+  });
+}
+
+export function useLeaveSettings() {
+  return useQuery({
+    queryKey: ["settings", "leave"],
+    queryFn: () => browserFetch<LeaveSettings>("/settings/leave"),
+  });
+}
+
+export function useUpdateLeaveSettings() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: Partial<LeaveSettings>) =>
+      browserFetch<LeaveSettings>("/settings/leave", { method: "PUT", body: input }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["settings", "leave"] }),
   });
 }
