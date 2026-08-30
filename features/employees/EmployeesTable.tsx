@@ -39,7 +39,7 @@ const STATUS_OPTIONS: { value: EmployeeStatus; label: string }[] = [
   { value: "ARCHIVED", label: "Archived" },
 ];
 
-export function EmployeesTable() {
+export function EmployeesTable({ onInvite }: { onInvite?: () => void }) {
   const user = useCurrentUser();
   const canUpdate = user.permissions.includes("employee.update");
   const canArchive = user.permissions.includes("employee.archive");
@@ -144,6 +144,7 @@ export function EmployeesTable() {
         <EmptyState
           title="No employees found"
           description="Invite your first employee to get started."
+          action={onInvite ? { label: "Invite employee", onClick: onInvite } : undefined}
         />
       ) : (
         <>

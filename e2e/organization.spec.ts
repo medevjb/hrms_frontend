@@ -17,14 +17,15 @@ test("creating a department, a team, and adding a member all work end to end", a
   const teamName = `E2E Team ${suffix}`;
 
   // Invite an employee first so there's someone to add to the team.
-  await page.goto("/employees/new");
+  await page.goto("/employees");
+  await page.getByRole("button", { name: "Invite employee" }).click();
   await page.getByLabel("First name").fill("Org");
   await page.getByLabel("Last name").fill(`Member${suffix}`);
-  await page.getByLabel("Email").fill(`org-e2e-${suffix}@example.com`);
+  await page.getByLabel("Work email").fill(`org-e2e-${suffix}@example.com`);
   await page.getByLabel("Designation").fill("Engineer");
   await page.getByLabel("Joining date").fill("September 1, 2026");
   await page.getByRole("button", { name: "Send invitation" }).click();
-  await expect(page).toHaveURL(/\/employees\/\d+$/);
+  await expect(page.getByRole("dialog")).not.toBeVisible();
 
   // Create a department.
   await page.goto("/departments");

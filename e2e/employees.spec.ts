@@ -15,21 +15,19 @@ test("inviting an employee shows them in the list with INVITED status", async ({
   await page.getByRole("link", { name: "Employees" }).click();
   await expect(page).toHaveURL(/\/employees$/);
 
-  await page.getByRole("link", { name: "Invite employee" }).click();
-  await expect(page).toHaveURL(/\/employees\/new$/);
+  await page.getByRole("button", { name: "Invite employee" }).click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog).toBeVisible();
 
-  await page.getByLabel("First name").fill("Playwright");
-  await page.getByLabel("Last name").fill("Testuser");
-  await page.getByLabel("Email").fill(`playwright-${Date.now()}@example.com`);
-  await page.getByLabel("Designation").fill("QA Engineer");
-  await page.getByLabel("Joining date").fill("September 1, 2026");
-  await page.getByRole("button", { name: "Send invitation" }).click();
+  await dialog.getByLabel("First name").fill("Playwright");
+  await dialog.getByLabel("Last name").fill("Testuser");
+  await dialog.getByLabel("Work email").fill(`playwright-${Date.now()}@example.com`);
+  await dialog.getByLabel("Designation").fill("QA Engineer");
+  await dialog.getByLabel("Joining date").fill("September 1, 2026");
+  await dialog.getByRole("button", { name: "Send invitation" }).click();
 
-  // Redirects to the detail page on success.
-  await expect(page).toHaveURL(/\/employees\/\d+$/);
-  await expect(page.getByRole("heading", { name: "Playwright Testuser" })).toBeVisible();
-  await expect(page.getByText("INVITED")).toBeVisible();
-
-  await page.getByRole("link", { name: "Employees" }).click();
-  await expect(page.getByText("Playwright Testuser").first()).toBeVisible();
+  // Dialog closes and the new hire lands in the list as INVITED.
+  await expect(dialog).not.toBeVisible();
+  await expect(page.getByRole("cell", { name: "Playwright Testuser" })).toBeVisible();
+  await expect(page.getByText("INVITED").first()).toBeVisible();
 });
