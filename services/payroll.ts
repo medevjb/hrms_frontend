@@ -17,6 +17,44 @@ export function useSalaryComponents() {
   });
 }
 
+export type SaveSalaryComponentInput = {
+  code?: string;
+  name?: string;
+  type?: "BASIC" | "ALLOWANCE";
+  sort_order?: number;
+  is_active?: boolean;
+};
+
+export function useCreateSalaryComponent() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: SaveSalaryComponentInput) =>
+      browserFetch<SalaryComponent>("/salary-components", { method: "POST", body: input }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["salary-components"] }),
+  });
+}
+
+export function useUpdateSalaryComponent(id: number) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: SaveSalaryComponentInput) =>
+      browserFetch<SalaryComponent>(`/salary-components/${id}`, { method: "PUT", body: input }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["salary-components"] }),
+  });
+}
+
+export function useDeleteSalaryComponent() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: number) =>
+      browserFetch<void>(`/salary-components/${id}`, { method: "DELETE" }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["salary-components"] }),
+  });
+}
+
 export function useEmployeeSalary(employeeId: number) {
   return useQuery({
     queryKey: ["employee-salary", employeeId],

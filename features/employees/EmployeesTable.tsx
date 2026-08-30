@@ -1,12 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { ChevronLeftIcon, ChevronRightIcon, SearchIcon } from "lucide-react";
+import { toast } from "sonner";
+import { BulkBar } from "@/components/ui/BulkBar";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Input } from "@/components/ui/input";
 import { PageLoadingSkeleton } from "@/components/ui/PageLoadingSkeleton";
+import { RowActions } from "@/components/ui/RowActions";
 import {
   Select,
   SelectContent,
@@ -15,8 +20,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useEmployees } from "@/services/employees";
+import { useCurrentUser } from "@/features/auth/CurrentUserContext";
+import { useRowSelection } from "@/hooks/use-row-selection";
+import { apiErrorMessage } from "@/lib/api-error";
+import { useDeleteEmployee, useEmployees } from "@/services/employees";
 import type { EmployeeStatus } from "@/types/organization";
+import { ChangeEmployeeStatusDialog } from "./ChangeEmployeeStatusDialog";
 import { EmployeeStatusBadge } from "./EmployeeStatusBadge";
 
 const STATUS_OPTIONS: { value: EmployeeStatus; label: string }[] = [
@@ -31,22 +40,38 @@ const STATUS_OPTIONS: { value: EmployeeStatus; label: string }[] = [
 ];
 
 export function EmployeesTable() {
+  const user = useCurrentUser();
+  const canUpdate = user.permissions.includes("employee.update");
+  const canArchive = user.permissions.includes("employee.archive");
+  const selectable = canUpdate || canArchive;
+
   const [status, setStatus] = useState<EmployeeStatus | "all">("all");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  const [statusTarget, setStatusTarget] = useState<number[] | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<{ ids: number[]; label: string } | null>(null);
 
   const { data, isLoading } = useEmployees({ status: status === "all" ? undefined : status, page });
+  const deleteEmployee = useDeleteEmployee();
+
+  const employees = useMemo(
+    () =>
+      (data?.data ?? []).filter((employee) =>
+        search.trim() === ""
+          ? true
+          : employee.full_name.toLowerCase().includes(search.toLowerCase()) ||
+            employee.employee_code.toLowerCase().includes(search.toLowerCase()),
+      ),
+    [data, search],
+  );
+
+  const selection = useRowSelection(employees, (employee) => employee.id);
+  const allSelectedInvited =
+    selection.count > 0 && selection.selected.every((employee) => employee.status === "INVITED");
 
   if (isLoading) {
     return <PageLoadingSkeleton />;
   }
-
-  const employees = (data?.data ?? []).filter((employee) =>
-    search.trim() === ""
-      ? true
-      : employee.full_name.toLowerCase().includes(search.toLowerCase())
-        || employee.employee_code.toLowerCase().includes(search.toLowerCase()),
-  );
 
   return (
     <>
@@ -65,6 +90,7 @@ export function EmployeesTable() {
           onValueChange={(value) => {
             setStatus(value as EmployeeStatus | "all");
             setPage(1);
+            selection.clear();
           }}
         >
           <SelectTrigger className="w-44">
@@ -81,6 +107,39 @@ export function EmployeesTable() {
         </Select>
       </div>
 
+      {selectable && (
+        <BulkBar count={selection.count} onClear={selection.clear}>
+          {canUpdate && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setStatusTarget(selection.selected.map((employee) => employee.id))}
+            >
+              Change status
+            </Button>
+          )}
+          {canArchive && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-destructive hover:text-destructive"
+              disabled={!allSelectedInvited}
+              title={
+                allSelectedInvited
+                  ? undefined
+                  : "Only invited employees who never onboarded can be deleted"
+              }
+              onClick={() => {
+                const ids = selection.selected.map((employee) => employee.id);
+                setPendingDelete({ ids, label: `${ids.length} invited employees` });
+              }}
+            >
+              Delete
+            </Button>
+          )}
+        </BulkBar>
+      )}
+
       {employees.length === 0 ? (
         <EmptyState
           title="No employees found"
@@ -92,17 +151,42 @@ export function EmployeesTable() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  {selectable && (
+                    <TableHead className="w-10">
+                      <Checkbox
+                        aria-label="Select all"
+                        checked={
+                          selection.allSelected
+                            ? true
+                            : selection.someSelected
+                              ? "indeterminate"
+                              : false
+                        }
+                        onCheckedChange={() => selection.toggleAll()}
+                      />
+                    </TableHead>
+                  )}
                   <TableHead>Name</TableHead>
                   <TableHead>Code</TableHead>
                   <TableHead>Designation</TableHead>
                   <TableHead>Department</TableHead>
                   <TableHead>Team</TableHead>
                   <TableHead>Status</TableHead>
+                  {selectable && <TableHead className="text-right">Actions</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {employees.map((employee) => (
-                  <TableRow key={employee.id}>
+                  <TableRow key={employee.id} data-state={selection.isSelected(employee.id) ? "selected" : undefined}>
+                    {selectable && (
+                      <TableCell>
+                        <Checkbox
+                          aria-label={`Select ${employee.full_name}`}
+                          checked={selection.isSelected(employee.id)}
+                          onCheckedChange={() => selection.toggle(employee.id)}
+                        />
+                      </TableCell>
+                    )}
                     <TableCell>
                       <Link href={`/employees/${employee.id}`} className="font-medium text-primary hover:underline">
                         {employee.full_name}
@@ -117,6 +201,21 @@ export function EmployeesTable() {
                     <TableCell>
                       <EmployeeStatusBadge status={employee.status} />
                     </TableCell>
+                    {selectable && (
+                      <TableCell>
+                        <RowActions
+                          viewHref={`/employees/${employee.id}`}
+                          onEdit={canUpdate ? () => setStatusTarget([employee.id]) : undefined}
+                          onDelete={
+                            canArchive && employee.status === "INVITED"
+                              ? () =>
+                                  setPendingDelete({ ids: [employee.id], label: employee.full_name })
+                              : undefined
+                          }
+                          deleteTitle="Delete this invited employee"
+                        />
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))}
               </TableBody>
@@ -150,6 +249,38 @@ export function EmployeesTable() {
           )}
         </>
       )}
+
+      <ChangeEmployeeStatusDialog
+        employeeIds={statusTarget ?? []}
+        open={statusTarget !== null}
+        onClose={() => setStatusTarget(null)}
+        onDone={() => selection.clear()}
+      />
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        onOpenChange={(next) => !next && setPendingDelete(null)}
+        title={
+          (pendingDelete?.ids.length ?? 0) > 1 ? "Delete invited employees?" : "Delete invited employee?"
+        }
+        description={`Permanently removes ${pendingDelete?.label ?? "this person"} and the paired pending user account${
+          (pendingDelete?.ids.length ?? 0) > 1 ? "s" : ""
+        }. This is only for an invite created by mistake — it's blocked once anyone has any history.`}
+        confirmLabel="Delete"
+        destructive
+        onConfirm={async () => {
+          const ids = pendingDelete?.ids ?? [];
+          const results = await Promise.allSettled(ids.map((id) => deleteEmployee.mutateAsync(id)));
+          const failed = results.filter((r) => r.status === "rejected");
+          const ok = results.length - failed.length;
+          if (ok > 0) toast.success(`${ok} employee${ok === 1 ? "" : "s"} deleted`);
+          if (failed.length > 0) {
+            const first = failed[0] as PromiseRejectedResult;
+            toast.error(apiErrorMessage(first.reason, "Could not delete"));
+          }
+          selection.clear();
+        }}
+      />
     </>
   );
 }

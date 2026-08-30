@@ -48,3 +48,12 @@ export function useCreateShiftOverride() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["employees"] }),
   });
 }
+
+export function useDeleteShift() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: number) => browserFetch<void>(`/shifts/${id}`, { method: "DELETE" }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["shifts"] }),
+  });
+}

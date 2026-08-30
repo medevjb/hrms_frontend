@@ -3,12 +3,15 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PageLoadingSkeleton } from "@/components/ui/PageLoadingSkeleton";
+import { RowActions } from "@/components/ui/RowActions";
 import { StatusChip, type StatusTone } from "@/components/ui/status-chip";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useCurrentUser } from "@/features/auth/CurrentUserContext";
-import { usePublishAnnouncement, useAnnouncements } from "@/services/announcements";
+import { useAnnouncements, useDeleteAnnouncement, usePublishAnnouncement } from "@/services/announcements";
+import { apiErrorMessage } from "@/lib/api-error";
 import type { Announcement, AnnouncementStatus } from "@/types/announcements";
 import { AnnouncementDetailDialog } from "./AnnouncementDetailDialog";
 
@@ -50,8 +53,11 @@ function PublishButton({ announcement }: { announcement: Announcement }) {
 export function AnnouncementsList({ mode }: { mode: "feed" | "manage" }) {
   const user = useCurrentUser();
   const canPublish = user.permissions.includes("announcement.publish");
+  const canManage = user.permissions.includes("announcement.create");
   const { data, isLoading } = useAnnouncements(mode === "feed" ? { mine: true } : {});
+  const deleteAnnouncement = useDeleteAnnouncement();
   const [selected, setSelected] = useState<Announcement | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<Announcement | null>(null);
 
   if (isLoading) {
     return <PageLoadingSkeleton />;
@@ -111,6 +117,7 @@ export function AnnouncementsList({ mode }: { mode: "feed" | "manage" }) {
   }
 
   return (
+    <>
     <div className="overflow-hidden rounded-xl border border-border">
       <Table>
         <TableHeader>
@@ -144,9 +151,12 @@ export function AnnouncementsList({ mode }: { mode: "feed" | "manage" }) {
                     : `${announcement.read_count ?? 0}`}
               </TableCell>
               <TableCell>
-                <div className="flex justify-end">
+                <div className="flex items-center justify-end gap-1">
                   {announcement.status === "DRAFT" && canPublish && (
                     <PublishButton announcement={announcement} />
+                  )}
+                  {announcement.status === "DRAFT" && canManage && (
+                    <RowActions onDelete={() => setPendingDelete(announcement)} />
                   )}
                 </div>
               </TableCell>
@@ -155,5 +165,24 @@ export function AnnouncementsList({ mode }: { mode: "feed" | "manage" }) {
         </TableBody>
       </Table>
     </div>
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        onOpenChange={(next) => !next && setPendingDelete(null)}
+        title={`Delete "${pendingDelete?.title ?? "announcement"}"?`}
+        description="This permanently removes the draft. Published announcements are a record of what people were shown and can't be deleted."
+        confirmLabel="Delete"
+        destructive
+        onConfirm={async () => {
+          if (!pendingDelete) return;
+          try {
+            await deleteAnnouncement.mutateAsync(pendingDelete.id);
+            toast.success("Draft deleted");
+          } catch (caught) {
+            toast.error(apiErrorMessage(caught, "Could not delete draft"));
+          }
+        }}
+      />
+    </>
   );
 }

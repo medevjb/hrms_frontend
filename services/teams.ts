@@ -81,3 +81,12 @@ export function useRemoveTeamMember(teamId: number) {
     },
   });
 }
+
+export function useDeleteTeam() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: number) => browserFetch<void>(`/teams/${id}`, { method: "DELETE" }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["teams"] }),
+  });
+}

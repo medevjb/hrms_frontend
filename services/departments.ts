@@ -35,3 +35,12 @@ export function useUpdateDepartment(id: number) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["departments"] }),
   });
 }
+
+export function useDeleteDepartment() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: number) => browserFetch<void>(`/departments/${id}`, { method: "DELETE" }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["departments"] }),
+  });
+}

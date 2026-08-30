@@ -92,3 +92,12 @@ export function useMarkAnnouncementRead(id: number) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["announcements"] }),
   });
 }
+
+export function useDeleteAnnouncement() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: number) => browserFetch<void>(`/announcements/${id}`, { method: "DELETE" }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["announcements"] }),
+  });
+}

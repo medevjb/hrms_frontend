@@ -1,21 +1,32 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { PlusIcon } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PageLoadingSkeleton } from "@/components/ui/PageLoadingSkeleton";
+import { RowActions } from "@/components/ui/RowActions";
 import { StatusChip } from "@/components/ui/status-chip";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useCurrentUser } from "@/features/auth/CurrentUserContext";
 import { useDisclosure } from "@/hooks/use-disclosure";
 import { useDepartments } from "@/services/departments";
-import { useTeams } from "@/services/teams";
+import { useDeleteTeam, useTeams } from "@/services/teams";
+import { apiErrorMessage } from "@/lib/api-error";
+import type { Team } from "@/types/organization";
 import { CreateTeamModal } from "./CreateTeamModal";
 
 export function DepartmentDetail({ departmentId }: { departmentId: number }) {
+  const user = useCurrentUser();
+  const canManage = user.permissions.includes("team.manage");
   const { data: departments, isLoading: loadingDepartments } = useDepartments();
   const { data: teams, isLoading: loadingTeams } = useTeams(departmentId);
+  const deleteTeam = useDeleteTeam();
   const [opened, { open, close }] = useDisclosure(false);
+  const [pendingDelete, setPendingDelete] = useState<Team | null>(null);
 
   const department = departments?.find((d) => d.id === departmentId);
 
@@ -37,17 +48,19 @@ export function DepartmentDetail({ departmentId }: { departmentId: number }) {
             Operation Manager: {department.operation_manager?.full_name ?? "Unassigned"}
           </p>
         </div>
-        <Button onClick={open}>
-          <PlusIcon />
-          Add team
-        </Button>
+        {canManage && (
+          <Button onClick={open}>
+            <PlusIcon />
+            Add team
+          </Button>
+        )}
       </div>
 
       {!teams || teams.length === 0 ? (
         <EmptyState
           title="No teams yet"
           description="Create a team in this department to start assigning members."
-          action={{ label: "Add team", onClick: open }}
+          action={canManage ? { label: "Add team", onClick: open } : undefined}
         />
       ) : (
         <div className="overflow-hidden rounded-xl border border-border">
@@ -58,6 +71,7 @@ export function DepartmentDetail({ departmentId }: { departmentId: number }) {
                 <TableHead>Team Leader</TableHead>
                 <TableHead>Members</TableHead>
                 <TableHead>Status</TableHead>
+                {canManage && <TableHead className="text-right">Actions</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -75,6 +89,14 @@ export function DepartmentDetail({ departmentId }: { departmentId: number }) {
                       {team.active ? "Active" : "Inactive"}
                     </StatusChip>
                   </TableCell>
+                  {canManage && (
+                    <TableCell>
+                      <RowActions
+                        viewHref={`/teams/${team.id}`}
+                        onDelete={() => setPendingDelete(team)}
+                      />
+                    </TableCell>
+                  )}
                 </TableRow>
               ))}
             </TableBody>
@@ -83,6 +105,24 @@ export function DepartmentDetail({ departmentId }: { departmentId: number }) {
       )}
 
       <CreateTeamModal departmentId={departmentId} opened={opened} onClose={close} />
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        onOpenChange={(next) => !next && setPendingDelete(null)}
+        title={`Delete ${pendingDelete?.name ?? "team"}?`}
+        description="This permanently removes the team. It's blocked if anyone is on the team's roster (current or past) — remove current members and archive instead."
+        confirmLabel="Delete"
+        destructive
+        onConfirm={async () => {
+          if (!pendingDelete) return;
+          try {
+            await deleteTeam.mutateAsync(pendingDelete.id);
+            toast.success("Team deleted");
+          } catch (caught) {
+            toast.error(apiErrorMessage(caught, "Could not delete team"));
+          }
+        }}
+      />
     </>
   );
 }

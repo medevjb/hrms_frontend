@@ -17,3 +17,12 @@ export class ApiError extends Error {
     this.data = body.data;
   }
 }
+
+/**
+ * The message to show for a failed mutation. A guarded delete answers 409
+ * with a human-readable reason ("still has teams", "used in a salary") — we
+ * surface that verbatim; anything else falls back to a generic line.
+ */
+export function apiErrorMessage(caught: unknown, fallback: string): string {
+  return caught instanceof ApiError && caught.message ? caught.message : fallback;
+}

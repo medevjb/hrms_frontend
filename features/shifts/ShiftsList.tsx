@@ -1,23 +1,52 @@
 "use client";
 
 import { useState } from "react";
-import { PencilIcon, PlusIcon } from "lucide-react";
+import { PlusIcon } from "lucide-react";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { PageLoadingSkeleton } from "@/components/ui/PageLoadingSkeleton";
-import { StatusChip } from "@/components/ui/status-chip";
+import { RowActions } from "@/components/ui/RowActions";
+import { StatusSwitch } from "@/components/ui/StatusSwitch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useCurrentUser } from "@/features/auth/CurrentUserContext";
 import { useDisclosure } from "@/hooks/use-disclosure";
-import { useShifts } from "@/services/shifts";
+import { useDeleteShift, useShifts, useUpdateShift } from "@/services/shifts";
+import { apiErrorMessage } from "@/lib/api-error";
 import type { Shift } from "@/types/shifts";
 import { SaveShiftModal } from "./SaveShiftModal";
 
+function ShiftStatusSwitch({ shift, disabled }: { shift: Shift; disabled?: boolean }) {
+  const update = useUpdateShift(shift.id);
+
+  return (
+    <StatusSwitch
+      checked={shift.active}
+      disabled={disabled}
+      entityLabel={`the ${shift.name} shift`}
+      onConfirm={async (next) => {
+        try {
+          await update.mutateAsync({ active: next });
+          toast.success(next ? "Shift activated" : "Shift deactivated");
+        } catch (caught) {
+          toast.error(apiErrorMessage(caught, "Could not update the shift"));
+        }
+      }}
+    />
+  );
+}
+
 export function ShiftsList() {
+  const user = useCurrentUser();
+  const canManage = user.permissions.includes("shift.manage");
   const { data: shifts, isLoading } = useShifts();
+  const deleteShift = useDeleteShift();
   const [opened, { open, close }] = useDisclosure(false);
   const [editing, setEditing] = useState<Shift | undefined>(undefined);
+  const [pendingDelete, setPendingDelete] = useState<Shift | null>(null);
 
   function openCreate() {
     setEditing(undefined);
@@ -35,10 +64,12 @@ export function ShiftsList() {
         title="Shifts"
         description="The shift catalogue — start/end times, expected hours, and any shift-specific late grace override."
         actions={
-          <Button onClick={openCreate}>
-            <PlusIcon />
-            Add shift
-          </Button>
+          canManage && (
+            <Button onClick={openCreate}>
+              <PlusIcon />
+              Add shift
+            </Button>
+          )
         }
       />
 
@@ -48,7 +79,7 @@ export function ShiftsList() {
         <EmptyState
           title="No shifts yet"
           description="Create a shift so employees can be assigned to it."
-          action={{ label: "Add shift", onClick: openCreate }}
+          action={canManage ? { label: "Add shift", onClick: openCreate } : undefined}
         />
       ) : (
         <div className="overflow-hidden rounded-xl border border-border">
@@ -59,8 +90,8 @@ export function ShiftsList() {
                 <TableHead>Hours</TableHead>
                 <TableHead>Expected work</TableHead>
                 <TableHead>Late grace</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead />
+                <TableHead>Active</TableHead>
+                {canManage && <TableHead className="text-right">Actions</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -82,15 +113,16 @@ export function ShiftsList() {
                       : `${shift.late_grace_minutes} min`}
                   </TableCell>
                   <TableCell>
-                    <StatusChip tone={shift.active ? "success" : "neutral"}>
-                      {shift.active ? "Active" : "Inactive"}
-                    </StatusChip>
+                    <ShiftStatusSwitch shift={shift} disabled={!canManage} />
                   </TableCell>
-                  <TableCell>
-                    <Button variant="ghost" size="icon-sm" onClick={() => openEdit(shift)} aria-label="Edit shift">
-                      <PencilIcon />
-                    </Button>
-                  </TableCell>
+                  {canManage && (
+                    <TableCell>
+                      <RowActions
+                        onEdit={() => openEdit(shift)}
+                        onDelete={() => setPendingDelete(shift)}
+                      />
+                    </TableCell>
+                  )}
                 </TableRow>
               ))}
             </TableBody>
@@ -99,6 +131,24 @@ export function ShiftsList() {
       )}
 
       <SaveShiftModal opened={opened} onClose={close} shift={editing} />
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        onOpenChange={(next) => !next && setPendingDelete(null)}
+        title={`Delete ${pendingDelete?.name ?? "shift"}?`}
+        description="This permanently removes the shift. It's blocked if the shift is assigned to anyone or referenced by attendance history — deactivate it instead."
+        confirmLabel="Delete"
+        destructive
+        onConfirm={async () => {
+          if (!pendingDelete) return;
+          try {
+            await deleteShift.mutateAsync(pendingDelete.id);
+            toast.success("Shift deleted");
+          } catch (caught) {
+            toast.error(apiErrorMessage(caught, "Could not delete shift"));
+          }
+        }}
+      />
     </>
   );
 }

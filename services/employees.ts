@@ -98,6 +98,22 @@ export function useUpdateEmployeeStatus(id: number) {
   });
 }
 
+/**
+ * Status change keyed by id in the payload rather than the hook — lets one
+ * mutation instance drive a bulk change over a list of selected rows.
+ */
+export function useChangeEmployeeStatus() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, ...body }: { id: number; status: EmployeeStatus; reason: string }) =>
+      browserFetch<Employee>(`/employees/${id}/status`, { method: "PATCH", body }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["employees"] });
+    },
+  });
+}
+
 export function useTransferEmployee(id: number) {
   const queryClient = useQueryClient();
 
@@ -120,5 +136,14 @@ export function useAssignShift(id: number) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["employees"] });
     },
+  });
+}
+
+export function useDeleteEmployee() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: number) => browserFetch<void>(`/employees/${id}`, { method: "DELETE" }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["employees"] }),
   });
 }

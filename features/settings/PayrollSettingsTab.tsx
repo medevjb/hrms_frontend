@@ -19,6 +19,7 @@ import { ApiError } from "@/lib/api-error";
 import { usePayrollSettings, useUpdatePayrollSettings } from "@/services/settings";
 import type { PayrollSettings, SalaryDayCalculationMethod } from "@/types/settings";
 import { LatePenaltyRulesCard } from "./LatePenaltyRulesCard";
+import { SalaryComponentsCard } from "./SalaryComponentsCard";
 
 const TOGGLES: { key: keyof PayrollSettings; label: string }[] = [
   { key: "late_penalty_enabled", label: "Apply late penalties" },
@@ -150,6 +151,7 @@ export function PayrollSettingsTab() {
     <div className="space-y-8">
       <Form initial={data} />
       <LatePenaltyRulesCard />
+      <SalaryComponentsCard />
     </div>
   );
 }
