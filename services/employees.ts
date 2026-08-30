@@ -183,3 +183,12 @@ export function useDeleteEmployee() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["employees"] }),
   });
 }
+
+/** Re-sends the invitation email with a fresh link for an employee who
+ *  hasn't accepted yet (the original expires after 72h and is single-use). */
+export function useResendInvitation() {
+  return useMutation({
+    mutationFn: (id: number) =>
+      browserFetch<void>(`/employees/${id}/resend-invitation`, { method: "POST" }),
+  });
+}

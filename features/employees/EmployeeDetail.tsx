@@ -10,6 +10,7 @@ import {
   CopyIcon,
   MailIcon,
   PhoneIcon,
+  SendIcon,
   ShieldAlertIcon,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -42,6 +43,7 @@ import { ShiftSelect } from "@/features/shifts/ShiftSelect";
 import {
   useAssignShift,
   useEmployee,
+  useResendInvitation,
   useTransferEmployee,
   useUpdateEmployeeStatus,
 } from "@/services/employees";
@@ -152,6 +154,7 @@ export function EmployeeDetail({ employeeId }: { employeeId: number }) {
   const updateStatus = useUpdateEmployeeStatus(employeeId);
   const assignShift = useAssignShift(employeeId);
   const createShiftOverride = useCreateShiftOverride();
+  const resendInvitation = useResendInvitation();
 
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [reason, setReason] = useState("");
@@ -320,6 +323,30 @@ export function EmployeeDetail({ employeeId }: { employeeId: number }) {
                 {employee.employee_code}
               </span>
             </div>
+
+            {employee.status === "INVITED" && (
+              <div className="mt-4 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3">
+                <p className="text-xs text-amber-900 dark:text-amber-200">
+                  Invitation sent — waiting for {employee.first_name} to set a password. The link
+                  expires 72 hours after it&apos;s issued.
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-2.5 w-full gap-2"
+                  disabled={resendInvitation.isPending}
+                  onClick={() =>
+                    resendInvitation.mutate(employeeId, {
+                      onSuccess: () => toast.success(`Invitation resent to ${employee.email}`),
+                      onError: () => toast.error("Couldn't resend the invitation. Try again."),
+                    })
+                  }
+                >
+                  <SendIcon className="size-3.5" />
+                  {resendInvitation.isPending ? "Sending…" : "Resend invitation"}
+                </Button>
+              </div>
+            )}
 
             <div className="mt-6 border-t border-border/60 pt-5">
               <RailLabel>Tenure</RailLabel>
