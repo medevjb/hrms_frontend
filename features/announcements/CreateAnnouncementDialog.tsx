@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { DatePicker } from "@/components/ui/date-picker";
+import { DateTimePicker } from "@/components/ui/date-time-picker";
 import {
   Dialog,
   DialogContent,
@@ -215,12 +215,12 @@ function Form({ onClose }: { onClose: () => void }) {
         </label>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <FormField label="Publish on" description="Optional — leave blank to publish manually">
-          <DatePicker value={publishAt} onChange={setPublishAt} />
+      <div className="grid gap-4 sm:grid-cols-2">
+        <FormField label="Publish at" description="Optional — leave blank to publish manually">
+          <DateTimePicker value={publishAt} onChange={setPublishAt} />
         </FormField>
-        <FormField label="Expires on" description="Optional" error={fieldErrors.expires_at}>
-          <DatePicker value={expiresAt} onChange={setExpiresAt} />
+        <FormField label="Expires at" description="Optional" error={fieldErrors.expires_at}>
+          <DateTimePicker value={expiresAt} onChange={setExpiresAt} />
         </FormField>
       </div>
 

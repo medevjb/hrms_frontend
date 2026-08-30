@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { format, parseISO } from "date-fns";
 import { AlertCircleIcon } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { DateTimePicker } from "@/components/ui/date-time-picker";
 import {
   Dialog,
   DialogContent,
@@ -13,7 +13,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { FormField } from "@/components/ui/form-field";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -37,20 +36,10 @@ const STATUS_OPTIONS: { value: AttendanceStatus; label: string }[] = [
   { value: "MISSING_CHECKOUT", label: "Missing checkout" },
 ];
 
-function toLocalInputValue(iso: string | null): string {
-  if (!iso) return "";
-  return format(parseISO(iso), "yyyy-MM-dd'T'HH:mm");
-}
-
-function fromLocalInputValue(value: string): string | undefined {
-  if (!value) return undefined;
-  return new Date(value).toISOString();
-}
-
 function Form({ record, onClose }: { record: AttendanceRecord; onClose: () => void }) {
   const adjust = useAdjustAttendance(record.id);
-  const [checkIn, setCheckIn] = useState(toLocalInputValue(record.check_in));
-  const [checkOut, setCheckOut] = useState(toLocalInputValue(record.check_out));
+  const [checkIn, setCheckIn] = useState<string | null>(record.check_in);
+  const [checkOut, setCheckOut] = useState<string | null>(record.check_out);
   const [status, setStatus] = useState<AttendanceStatus>(record.status);
   const [reason, setReason] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -61,8 +50,8 @@ function Form({ record, onClose }: { record: AttendanceRecord; onClose: () => vo
 
     try {
       await adjust.mutateAsync({
-        check_in: fromLocalInputValue(checkIn) ?? null,
-        check_out: fromLocalInputValue(checkOut) ?? null,
+        check_in: checkIn,
+        check_out: checkOut,
         status,
         reason,
       });
@@ -80,30 +69,12 @@ function Form({ record, onClose }: { record: AttendanceRecord; onClose: () => vo
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
-      <div className="grid grid-cols-2 gap-4">
-        <FormField
-          label="Check-in"
-          htmlFor="adjust_check_in"
-          description="Your local time zone"
-        >
-          <Input
-            id="adjust_check_in"
-            type="datetime-local"
-            value={checkIn}
-            onChange={(e) => setCheckIn(e.target.value)}
-          />
+      <div className="grid gap-4 sm:grid-cols-2">
+        <FormField label="Check-in" htmlFor="adjust_check_in" description="Your local time zone">
+          <DateTimePicker id="adjust_check_in" value={checkIn} onChange={setCheckIn} />
         </FormField>
-        <FormField
-          label="Check-out"
-          htmlFor="adjust_check_out"
-          description="Your local time zone"
-        >
-          <Input
-            id="adjust_check_out"
-            type="datetime-local"
-            value={checkOut}
-            onChange={(e) => setCheckOut(e.target.value)}
-          />
+        <FormField label="Check-out" htmlFor="adjust_check_out" description="Your local time zone">
+          <DateTimePicker id="adjust_check_out" value={checkOut} onChange={setCheckOut} />
         </FormField>
       </div>
       <FormField label="Status">
