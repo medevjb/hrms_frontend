@@ -1,5 +1,6 @@
 import { SearchIcon } from "lucide-react";
 import { AppSidebar } from "@/components/layouts/AppSidebar";
+import { RouteGuard } from "@/components/layouts/RouteGuard";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { CheckInDialog } from "@/features/attendance/CheckInDialog";
@@ -32,7 +33,9 @@ export function AppShellLayout({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
-        <main className="flex flex-1 flex-col gap-6 p-4 md:p-6 lg:p-8">{children}</main>
+        <main className="flex flex-1 flex-col gap-6 p-4 md:p-6 lg:p-8">
+          <RouteGuard>{children}</RouteGuard>
+        </main>
       </SidebarInset>
       <CheckInDialog />
     </SidebarProvider>

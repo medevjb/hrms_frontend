@@ -32,6 +32,8 @@ import {
 } from "@/components/ui/sidebar";
 import { useCurrentUser } from "@/features/auth/CurrentUserContext";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { canAny } from "@/lib/permissions";
+import { permissionsForPath } from "@/lib/nav-permissions";
 
 type NavItem = {
   label: string;
@@ -44,9 +46,9 @@ type NavGroup = {
   items: NavItem[];
 };
 
-// Each feature module (docs/PRD.md §6.3) adds its own entry here once it
-// ships. TODO(later phase): gate these by the caller's resolved permissions
-// (can(), lib/permissions.ts) rather than showing every link to everyone.
+// A link shows only when the caller holds a permission for its route
+// (lib/nav-permissions.ts). The Dashboard has no gate. Display-only — the
+// API enforces every real check.
 const NAV_GROUPS: NavGroup[] = [
   {
     label: "Overview",
@@ -96,6 +98,14 @@ export function AppSidebar() {
   const pathname = usePathname();
   const user = useCurrentUser();
 
+  const visibleGroups = NAV_GROUPS.map((group) => ({
+    ...group,
+    items: group.items.filter((item) => {
+      const required = permissionsForPath(item.href);
+      return !required || canAny(user.permissions, required);
+    }),
+  })).filter((group) => group.items.length > 0);
+
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border bg-sidebar">
       <SidebarHeader className="p-3">
@@ -115,7 +125,7 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent className="px-2 py-1">
-        {NAV_GROUPS.map((group) => (
+        {visibleGroups.map((group) => (
           <SidebarGroup key={group.label} className="py-1">
             <SidebarGroupLabel className="text-[10px] font-bold tracking-wider text-muted-foreground/70 uppercase px-2 py-1">
               {group.label}

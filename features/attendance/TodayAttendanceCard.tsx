@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { parseISO } from "date-fns";
-import { CheckCircle2Icon, ClockIcon, LogOutIcon } from "lucide-react";
+import { CheckCircle2Icon, ClockIcon, LogInIcon, LogOutIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,7 +10,7 @@ import { StatusChip, type StatusTone } from "@/components/ui/status-chip";
 import { useCurrentUser } from "@/features/auth/CurrentUserContext";
 import { ApiError } from "@/lib/api-error";
 import { formatTimeInTimezone } from "@/lib/format-time";
-import { useAttendanceToday, useCheckOut } from "@/services/attendance";
+import { useAttendanceToday, useCheckIn, useCheckOut } from "@/services/attendance";
 import type { AttendanceStatus } from "@/types/attendance";
 
 const STATUS_TONE: Record<AttendanceStatus, StatusTone> = {
@@ -38,6 +38,7 @@ function formatDuration(minutes: number): string {
 export function TodayAttendanceCard() {
   const user = useCurrentUser();
   const { data: today, isLoading } = useAttendanceToday();
+  const checkIn = useCheckIn();
   const checkOut = useCheckOut();
   const [now, setNow] = useState(() => new Date());
 
@@ -54,6 +55,15 @@ export function TodayAttendanceCard() {
 
   if (!record && !today.is_work_day) {
     return null;
+  }
+
+  async function handleCheckIn() {
+    try {
+      await checkIn.mutateAsync();
+      toast.success("Checked in");
+    } catch (caught) {
+      toast.error(caught instanceof ApiError ? caught.message : "Check-in failed");
+    }
   }
 
   async function handleCheckOut() {
@@ -83,8 +93,12 @@ export function TodayAttendanceCard() {
       </CardHeader>
       <CardContent>
         {!record ? (
-          <div className="flex items-center justify-between py-1">
+          <div className="flex flex-wrap items-center justify-between gap-3 py-1">
             <p className="text-sm text-muted-foreground">You haven&apos;t checked in yet today.</p>
+            <Button size="sm" className="rounded-xl" onClick={handleCheckIn} disabled={checkIn.isPending}>
+              <LogInIcon className="mr-1.5 size-4" />
+              Check in
+            </Button>
           </div>
         ) : (
           <div className="flex flex-wrap items-center justify-between gap-6">
