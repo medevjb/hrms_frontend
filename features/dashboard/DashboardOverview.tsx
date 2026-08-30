@@ -2,193 +2,277 @@
 
 import Link from "next/link";
 import {
+  AlarmClockIcon,
   Building2Icon,
-  CalendarDaysIcon,
-  ClockIcon,
+  CalendarClockIcon,
+  FileWarningIcon,
+  MegaphoneIcon,
+  UserCheckIcon,
   UsersIcon,
+  WalletIcon,
 } from "lucide-react";
-import { Cell, Pie, PieChart } from "recharts";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { PageLoadingSkeleton } from "@/components/ui/PageLoadingSkeleton";
 import { StatTile } from "@/components/ui/stat-tile";
+import { StatusChip } from "@/components/ui/status-chip";
 import { TodayAttendanceCard } from "@/features/attendance/TodayAttendanceCard";
-import { useDepartments } from "@/services/departments";
-import { useEmployees } from "@/services/employees";
-import { useHolidays } from "@/services/holidays";
-import { useShifts } from "@/services/shifts";
-import { useTeams } from "@/services/teams";
-import type { EmployeeStatus } from "@/types/organization";
+import { useDashboard } from "@/services/dashboard";
 
-const STATUS_LABELS: Record<EmployeeStatus, string> = {
-  INVITED: "Invited",
-  ACTIVE: "Active",
-  PROBATION: "Probation",
-  NOTICE_PERIOD: "Notice period",
-  SUSPENDED: "Suspended",
-  RESIGNED: "Resigned",
-  TERMINATED: "Terminated",
-  ARCHIVED: "Archived",
-};
-
-const STATUS_COLORS: Record<EmployeeStatus, string> = {
-  INVITED: "var(--color-invited)",
-  ACTIVE: "var(--color-active)",
-  PROBATION: "var(--color-probation)",
-  NOTICE_PERIOD: "var(--color-notice)",
-  SUSPENDED: "var(--color-suspended)",
-  RESIGNED: "var(--color-notice)",
-  TERMINATED: "var(--color-suspended)",
-  ARCHIVED: "var(--color-invited)",
-};
-
-const chartConfig = {
-  count: { label: "Employees" },
-  active: { label: "Active", color: "oklch(0.72 0.17 165)" },
-  invited: { label: "Invited / Archived", color: "oklch(0.75 0.01 270)" },
-  probation: { label: "Probation", color: "oklch(0.78 0.16 85)" },
-  notice: { label: "Notice / Resigned", color: "oklch(0.7 0.17 60)" },
-  suspended: { label: "Suspended / Terminated", color: "oklch(0.62 0.22 25)" },
-} satisfies ChartConfig;
+function label(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
 
 export function DashboardOverview() {
-  // A generous per_page rather than a dedicated aggregate endpoint — real
-  // counts from real data, no fabricated numbers; revisit with a proper
-  // stats endpoint if the roster outgrows one page (docs/PRD.md Phase 10).
-  const { data: employeePage, isLoading: loadingEmployees } = useEmployees({ per_page: 100 });
-  const { data: departments, isLoading: loadingDepartments } = useDepartments();
-  const { data: teams, isLoading: loadingTeams } = useTeams();
-  const { data: shifts, isLoading: loadingShifts } = useShifts();
-  const { data: holidays, isLoading: loadingHolidays } = useHolidays();
+  const { data, isLoading } = useDashboard();
 
-  const loading = loadingEmployees || loadingDepartments || loadingTeams || loadingShifts || loadingHolidays;
-
-  if (loading) {
+  if (isLoading || !data) {
     return <PageLoadingSkeleton />;
   }
 
-  const employees = employeePage?.data ?? [];
-  const totalEmployees = employeePage?.meta.total ?? employees.length;
-  const activeShifts = (shifts ?? []).filter((shift) => shift.active).length;
-
-  const today = new Date().toISOString().slice(0, 10);
-  const upcomingHolidays = (holidays ?? [])
-    .filter((holiday) => holiday.active && holiday.date >= today)
-    .sort((a, b) => a.date.localeCompare(b.date))
-    .slice(0, 5);
-
-  const statusCounts = employees.reduce<Record<string, number>>((acc, employee) => {
-    acc[employee.status] = (acc[employee.status] ?? 0) + 1;
-    return acc;
-  }, {});
-
-  const chartData = (Object.keys(STATUS_LABELS) as EmployeeStatus[])
-    .filter((status) => statusCounts[status] > 0)
-    .map((status) => ({
-      status,
-      label: STATUS_LABELS[status],
-      count: statusCounts[status],
-      fill: STATUS_COLORS[status],
-    }));
+  const w = data.widgets;
+  const approvals = w.pending_approvals ?? {};
+  const totalApprovals = Object.values(approvals).reduce((sum, n) => sum + (n ?? 0), 0);
 
   return (
     <>
       <PageHeader
         title="Overview"
-        description="A live snapshot of the organization. Role-aware dashboards land in Phase 10 (docs/PRD.md §73-§78)."
+        description={
+          data.roles.length > 0
+            ? `Signed in as ${data.roles.join(", ")}.`
+            : "A live snapshot of your day."
+        }
       />
 
       <TodayAttendanceCard />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatTile label="Total employees" value={totalEmployees} icon={UsersIcon} tone="violet" />
-        <StatTile
-          label="Departments / teams"
-          value={`${departments?.length ?? 0} / ${teams?.length ?? 0}`}
-          icon={Building2Icon}
-          tone="blue"
-        />
-        <StatTile label="Active shifts" value={activeShifts} icon={ClockIcon} tone="emerald" />
-        <StatTile
-          label="Upcoming holidays"
-          value={upcomingHolidays.length}
-          icon={CalendarDaysIcon}
-          tone="amber"
-        />
+        {w.workforce && (
+          <StatTile label="Total employees" value={w.workforce.total} icon={UsersIcon} tone="violet" />
+        )}
+        {w.workforce && (
+          <StatTile
+            label="Departments / teams"
+            value={`${w.workforce.departments} / ${w.workforce.teams}`}
+            icon={Building2Icon}
+            tone="blue"
+          />
+        )}
+        {w.attendance_today && (
+          <StatTile
+            label="In / late / absent today"
+            value={`${w.attendance_today.present} / ${w.attendance_today.late} / ${w.attendance_today.absent}`}
+            icon={UserCheckIcon}
+            tone="emerald"
+          />
+        )}
+        {w.pending_approvals && (
+          <StatTile label="Waiting on you" value={totalApprovals} icon={FileWarningIcon} tone="amber" />
+        )}
+        {w.payroll && (
+          <StatTile
+            label="Open payroll periods"
+            value={w.payroll.open_periods}
+            icon={WalletIcon}
+            tone="blue"
+          />
+        )}
+        {w.me && (
+          <StatTile
+            label="My pending leave"
+            value={w.me.pending_leave}
+            icon={CalendarClockIcon}
+            tone="violet"
+          />
+        )}
+        {w.announcements && (
+          <StatTile
+            label="Unread announcements"
+            value={w.announcements.unread}
+            icon={MegaphoneIcon}
+            tone="amber"
+          />
+        )}
       </div>
 
-      <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-5">
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Employee status</CardTitle>
-            <CardDescription>
-              {totalEmployees > employees.length
-                ? `Breakdown of the first ${employees.length} employees`
-                : "Breakdown of every employee"}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {chartData.length === 0 ? (
-              <p className="py-10 text-center text-sm text-muted-foreground">No employees yet.</p>
-            ) : (
-              <ChartContainer config={chartConfig} className="mx-auto aspect-square max-h-64">
-                <PieChart>
-                  <ChartTooltip content={<ChartTooltipContent nameKey="label" hideLabel />} />
-                  <Pie data={chartData} dataKey="count" nameKey="label" innerRadius={55} outerRadius={85} strokeWidth={2}>
-                    {chartData.map((entry) => (
-                      <Cell key={entry.status} fill={entry.fill} />
-                    ))}
-                  </Pie>
-                </PieChart>
-              </ChartContainer>
-            )}
-            <div className="mt-4 flex flex-wrap justify-center gap-x-4 gap-y-1.5">
-              {chartData.map((entry) => (
-                <div key={entry.status} className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <span className="size-2 rounded-full" style={{ backgroundColor: entry.fill }} />
-                  {entry.label} ({entry.count})
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+      <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
+        {w.pending_approvals && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Waiting on you</CardTitle>
+              <CardDescription>Items in your approval queue right now.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {totalApprovals === 0 ? (
+                <p className="py-6 text-center text-sm text-muted-foreground">Your queue is clear.</p>
+              ) : (
+                <ul className="divide-y divide-border text-sm">
+                  {approvals.leave ? (
+                    <li className="flex justify-between py-2">
+                      <Link href="/leave" className="hover:underline">
+                        Leave approvals
+                      </Link>
+                      <span className="font-mono">{approvals.leave}</span>
+                    </li>
+                  ) : null}
+                  {approvals.overtime ? (
+                    <li className="flex justify-between py-2">
+                      <Link href="/overtime" className="hover:underline">
+                        Overtime approvals
+                      </Link>
+                      <span className="font-mono">{approvals.overtime}</span>
+                    </li>
+                  ) : null}
+                  {approvals.holiday_notices ? (
+                    <li className="flex justify-between py-2">
+                      <Link href="/holidays" className="hover:underline">
+                        Holiday notices to sign
+                      </Link>
+                      <span className="font-mono">{approvals.holiday_notices}</span>
+                    </li>
+                  ) : null}
+                  {approvals.payroll_disputes ? (
+                    <li className="flex justify-between py-2">
+                      <Link href="/payroll" className="hover:underline">
+                        Payroll disputes
+                      </Link>
+                      <span className="font-mono">{approvals.payroll_disputes}</span>
+                    </li>
+                  ) : null}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
-        <Card className="lg:col-span-3">
-          <CardHeader>
-            <CardTitle>Upcoming holidays</CardTitle>
-            <CardDescription>The next five holidays on the calendar.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {upcomingHolidays.length === 0 ? (
-              <p className="py-10 text-center text-sm text-muted-foreground">
-                No upcoming holidays.{" "}
-                <Link href="/holidays" className="text-primary hover:underline">
-                  Add one
+        {w.me && (
+          <Card>
+            <CardHeader>
+              <CardTitle>My leave balances</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {w.me.leave_balances.length === 0 ? (
+                <p className="py-6 text-center text-sm text-muted-foreground">No leave balances yet.</p>
+              ) : (
+                <ul className="divide-y divide-border text-sm">
+                  {w.me.leave_balances.map((balance) => (
+                    <li key={balance.leave_type} className="flex justify-between py-2">
+                      <span>{balance.leave_type}</span>
+                      <span className="font-mono">{balance.balance}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {w.me.payslip_awaiting_confirmation > 0 && (
+                <Link
+                  href="/payroll"
+                  className="mt-3 flex items-center gap-2 rounded-lg bg-amber-50 p-2 text-sm text-amber-800 dark:bg-amber-500/10 dark:text-amber-300"
+                >
+                  <WalletIcon className="size-4" />
+                  {w.me.payslip_awaiting_confirmation} payslip
+                  {w.me.payslip_awaiting_confirmation === 1 ? "" : "s"} awaiting your confirmation
                 </Link>
-                .
-              </p>
-            ) : (
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {w.payroll?.current_period && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Payroll — {w.payroll.current_period.label}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Status</span>
+                <StatusChip tone="info">
+                  {w.payroll.current_period.status.replace(/_/g, " ")}
+                </StatusChip>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Entries</span>
+                <span className="font-mono">{w.payroll.current_period.entries}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Awaiting confirmation</span>
+                <span className="font-mono">{w.payroll.current_period.awaiting_confirmation}</span>
+              </div>
+              <Link href={`/payroll/${w.payroll.current_period.id}`} className="text-primary hover:underline">
+                Open period →
+              </Link>
+            </CardContent>
+          </Card>
+        )}
+
+        {w.upcoming_holidays && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Upcoming holidays</CardTitle>
+              <CardDescription>The next few holidays on the calendar.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {w.upcoming_holidays.length === 0 ? (
+                <p className="py-6 text-center text-sm text-muted-foreground">
+                  No upcoming holidays.{" "}
+                  <Link href="/holidays" className="text-primary hover:underline">
+                    Add one
+                  </Link>
+                  .
+                </p>
+              ) : (
+                <ul className="divide-y divide-border">
+                  {w.upcoming_holidays.map((holiday) => (
+                    <li key={`${holiday.title}-${holiday.date}`} className="flex items-center justify-between py-2.5 text-sm">
+                      <div>
+                        <p className="font-medium">{holiday.title}</p>
+                        <p className="text-xs text-muted-foreground">{label(holiday.type)}</p>
+                      </div>
+                      <span className="font-mono text-xs text-muted-foreground">{holiday.date}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {w.announcements && w.announcements.recent.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Recent announcements</CardTitle>
+            </CardHeader>
+            <CardContent>
               <ul className="divide-y divide-border">
-                {upcomingHolidays.map((holiday) => (
-                  <li key={holiday.id} className="flex items-center justify-between py-2.5 text-sm">
-                    <div>
-                      <p className="font-medium text-foreground">{holiday.title}</p>
-                      <p className="text-xs text-muted-foreground">{holiday.type}</p>
-                    </div>
-                    <span className="font-mono text-xs text-muted-foreground">{holiday.date}</span>
+                {w.announcements.recent.map((announcement) => (
+                  <li key={announcement.id} className="flex items-center justify-between py-2.5 text-sm">
+                    <Link href="/announcements" className="font-medium hover:underline">
+                      {announcement.title}
+                    </Link>
+                    <span className="text-xs text-muted-foreground">{label(announcement.type)}</span>
                   </li>
                 ))}
               </ul>
-            )}
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
+
+        {(w.me?.overtime_pending ?? 0) > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>My overtime</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Link href="/overtime" className="flex items-center gap-2 text-sm hover:underline">
+                <AlarmClockIcon className="size-4" />
+                {w.me?.overtime_pending} record{w.me?.overtime_pending === 1 ? "" : "s"} pending approval
+              </Link>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </>
   );
