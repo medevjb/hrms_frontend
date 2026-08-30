@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronDownIcon, LogOutIcon, ShieldCheckIcon } from "lucide-react";
+import { ChevronDownIcon, LogOutIcon, SettingsIcon, ShieldCheckIcon } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -55,6 +56,13 @@ export function UserMenu() {
             </div>
           </div>
         </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild className="rounded-lg cursor-pointer">
+          <Link href="/settings">
+            <SettingsIcon className="size-4 mr-2" />
+            <span>Settings</span>
+          </Link>
+        </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleLogout} disabled={loggingOut} className="rounded-lg text-rose-600 focus:text-rose-600 focus:bg-rose-50 dark:focus:bg-rose-950/40 cursor-pointer">
           <LogOutIcon className="size-4 mr-2" />

@@ -19,7 +19,8 @@ export const SECTION_PERMISSIONS: Record<string, PermissionName[]> = {
   "/announcements": ["announcement.view"],
   "/reports": ["report.view"],
   "/audit": ["audit.view"],
-  "/settings": ["settings.manage", "payroll.settings.manage", "attendance.settings.manage"],
+  // /settings is intentionally absent — every user has a profile and a
+  // password tab there; SettingsPage gates the admin tabs itself.
 };
 
 /** The permissions gating `pathname`, or undefined if it's open to everyone
