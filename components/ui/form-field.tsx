@@ -14,11 +14,12 @@ export function FormField({
   children: React.ReactNode;
 }) {
   return (
-    <div className="space-y-2">
+    <div className="flex flex-col gap-2">
       <Label htmlFor={htmlFor}>{label}</Label>
       {children}
       {description && !error && <p className="text-xs text-muted-foreground">{description}</p>}
-      {error && <p className="text-xs text-destructive">{error}</p>}
+      {error && <p className="text-xs font-medium text-destructive">{error}</p>}
     </div>
   );
 }
+

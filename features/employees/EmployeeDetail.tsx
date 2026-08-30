@@ -481,8 +481,8 @@ export function EmployeeDetail({ employeeId }: { employeeId: number }) {
                         {employee.department?.name ?? "No department"}
                       </p>
                     </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Move to</label>
+                    <div className="flex flex-col gap-2">
+                      <label className="block text-sm font-medium text-foreground">Move to</label>
                       <Select value={teamChoice ?? undefined} onValueChange={setTeamChoice}>
                         <SelectTrigger className="w-full">
                           <SelectValue placeholder="Select a team" />
@@ -523,14 +523,14 @@ export function EmployeeDetail({ employeeId }: { employeeId: number }) {
                       value={overrideShiftId}
                       onChange={setOverrideShiftId}
                     />
-                    <div className="space-y-2">
-                      <label htmlFor="override_date" className="text-sm font-medium">
+                    <div className="flex flex-col gap-2">
+                      <label htmlFor="override_date" className="block text-sm font-medium text-foreground">
                         Date
                       </label>
                       <DatePicker id="override_date" value={overrideDate} onChange={setOverrideDate} />
                     </div>
-                    <div className="space-y-2 sm:col-span-2">
-                      <label htmlFor="override_reason" className="text-sm font-medium">
+                    <div className="flex flex-col gap-2 sm:col-span-2">
+                      <label htmlFor="override_reason" className="block text-sm font-medium text-foreground">
                         Reason
                       </label>
                       <Textarea
@@ -582,8 +582,8 @@ export function EmployeeDetail({ employeeId }: { employeeId: number }) {
                     <EmployeeStatusBadge status={employee.status} />
                   </div>
 
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Change status to</label>
+                  <div className="flex flex-col gap-2">
+                    <label className="block text-sm font-medium text-foreground">Change status to</label>
                     <Select
                       value={pendingStatus ?? undefined}
                       onValueChange={(value) => setPendingStatus(value as EmployeeStatus)}
@@ -612,8 +612,8 @@ export function EmployeeDetail({ employeeId }: { employeeId: number }) {
                     </Alert>
                   )}
 
-                  <div className="space-y-2">
-                    <label htmlFor="status_reason" className="text-sm font-medium">
+                  <div className="flex flex-col gap-2">
+                    <label htmlFor="status_reason" className="block text-sm font-medium text-foreground">
                       Reason <span className="text-destructive">*</span>
                     </label>
                     <Textarea
@@ -623,7 +623,7 @@ export function EmployeeDetail({ employeeId }: { employeeId: number }) {
                       onChange={(event) => setReason(event.target.value)}
                       rows={3}
                     />
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-muted-foreground mt-0.5">
                       Saved to this person&apos;s status history and the audit log.
                     </p>
                   </div>

@@ -23,9 +23,9 @@ export function ShiftSelect({
   const id = useId();
 
   return (
-    <div className="space-y-2">
+    <div className="flex flex-col gap-2">
       {label && (
-        <label htmlFor={id} className="text-sm font-medium">
+        <label htmlFor={id} className="block text-sm font-medium text-foreground">
           {label}
         </label>
       )}
@@ -46,3 +46,4 @@ export function ShiftSelect({
     </div>
   );
 }
+
