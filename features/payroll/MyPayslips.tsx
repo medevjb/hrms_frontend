@@ -66,7 +66,12 @@ export function MyPayslips() {
         </Table>
       </div>
 
-      <PayrollEntryDetailDialog entryId={selected} periodClosed onClose={() => setSelected(null)} />
+      <PayrollEntryDetailDialog
+        entryId={selected}
+        periodClosed
+        viewerIsOwner
+        onClose={() => setSelected(null)}
+      />
     </>
   );
 }

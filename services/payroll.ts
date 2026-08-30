@@ -4,6 +4,7 @@ import type { PaginationMeta } from "@/types/api";
 import type {
   EmployeeSalary,
   PayrollAdjustmentType,
+  PayrollDispute,
   PayrollEntry,
   PayrollPeriod,
   SalaryComponent,
@@ -79,6 +80,71 @@ export function useGeneratePayroll(periodId: number) {
       queryClient.invalidateQueries({ queryKey: ["payroll-entries"] });
     },
   });
+}
+
+export type PayrollTransition = "review" | "release" | "finalize" | "mark-paid" | "lock";
+
+export function usePayrollTransition(periodId: number) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (transition: PayrollTransition) =>
+      browserFetch<PayrollPeriod>(`/payroll/periods/${periodId}/${transition}`, { method: "POST" }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["payroll-periods"] });
+      queryClient.invalidateQueries({ queryKey: ["payroll-entries"] });
+    },
+  });
+}
+
+export function usePayrollDisputes(status?: "OPEN" | "RESOLVED") {
+  return useQuery({
+    queryKey: ["payroll-disputes", status ?? "all"],
+    queryFn: () =>
+      browserFetch<PayrollDispute[]>(
+        `/payroll/disputes${status ? `?filter[status]=${status}` : ""}`,
+      ),
+  });
+}
+
+export function useResolveDispute(id: number) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: { resolution: "UPHELD" | "REJECTED"; note: string }) =>
+      browserFetch<PayrollDispute>(`/payroll/disputes/${id}/resolve`, { method: "POST", body: input }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["payroll-disputes"] });
+      queryClient.invalidateQueries({ queryKey: ["payroll-entries"] });
+    },
+  });
+}
+
+export function useAcknowledgePayrollEntry(id: number) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () =>
+      browserFetch<PayrollEntry>(`/payroll/entries/${id}/acknowledge`, { method: "POST" }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["payroll-entries"] }),
+  });
+}
+
+export function useDisputePayrollEntry(id: number) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (reason: string) =>
+      browserFetch<PayrollDispute>(`/payroll/entries/${id}/dispute`, {
+        method: "POST",
+        body: { reason },
+      }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["payroll-entries"] }),
+  });
+}
+
+export function payslipDownloadUrl(entryId: number): string {
+  return `/api/proxy/payroll/entries/${entryId}/payslip`;
 }
 
 export type PayrollEntryFilters = { payroll_period_id?: number; mine?: boolean; page?: number };

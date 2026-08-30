@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -9,9 +10,17 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { PageLoadingSkeleton } from "@/components/ui/PageLoadingSkeleton";
+import { StatusChip } from "@/components/ui/status-chip";
+import { Textarea } from "@/components/ui/textarea";
 import { useCurrentUser } from "@/features/auth/CurrentUserContext";
+import { ApiError } from "@/lib/api-error";
 import { formatMoney } from "@/lib/format-money";
-import { usePayrollEntry } from "@/services/payroll";
+import {
+  payslipDownloadUrl,
+  useAcknowledgePayrollEntry,
+  useDisputePayrollEntry,
+  usePayrollEntry,
+} from "@/services/payroll";
 import type { PayrollEntryLine } from "@/types/payroll";
 import { AdjustPayrollEntryDialog } from "./AdjustPayrollEntryDialog";
 
@@ -35,19 +44,30 @@ function LineRow({ line }: { line: PayrollEntryLine }) {
 export function PayrollEntryDetailDialog({
   entryId,
   periodClosed,
+  viewerIsOwner = false,
   onClose,
 }: {
   entryId: number | null;
   periodClosed: boolean;
+  viewerIsOwner?: boolean;
   onClose: () => void;
 }) {
   const user = useCurrentUser();
   const canAdjust = user.permissions.includes("payroll.adjust");
   const { data: entry, isLoading } = usePayrollEntry(entryId);
+  const acknowledge = useAcknowledgePayrollEntry(entryId ?? 0);
+  const dispute = useDisputePayrollEntry(entryId ?? 0);
   const [adjusting, setAdjusting] = useState(false);
+  const [disputeReason, setDisputeReason] = useState("");
+  const [showDispute, setShowDispute] = useState(false);
 
   const earnings = entry?.lines?.filter((line) => line.category === "EARNING") ?? [];
   const deductions = entry?.lines?.filter((line) => line.category === "DEDUCTION") ?? [];
+
+  const canRespond =
+    viewerIsOwner &&
+    entry?.status === "RELEASED" &&
+    entry.acknowledgement_status === "PENDING";
 
   return (
     <>
@@ -107,11 +127,102 @@ export function PayrollEntryDetailDialog({
                 </div>
               </div>
 
-              {canAdjust && !periodClosed && (
-                <div className="flex justify-end">
+              {entry.acknowledgement_status !== "PENDING" && (
+                <div className="flex items-center gap-2 text-sm">
+                  <StatusChip
+                    tone={
+                      entry.acknowledgement_status === "DISPUTED"
+                        ? "danger"
+                        : entry.acknowledgement_status === "ACKNOWLEDGED"
+                          ? "success"
+                          : "neutral"
+                    }
+                  >
+                    {entry.acknowledgement_status.replace(/_/g, " ")}
+                  </StatusChip>
+                </div>
+              )}
+
+              {entry.disputes && entry.disputes.length > 0 && (
+                <div className="space-y-2 rounded-lg border border-border bg-muted/40 p-3 text-sm">
+                  {entry.disputes.map((d) => (
+                    <div key={d.id}>
+                      <p className="font-medium">Dispute: {d.reason}</p>
+                      {d.resolution && (
+                        <p className="text-muted-foreground">
+                          {d.resolution === "UPHELD" ? "Upheld" : "Rejected"} — {d.resolution_note}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="flex flex-wrap justify-end gap-2">
+                {entry.has_payslip && (
+                  <Button variant="ghost" size="sm" asChild>
+                    <a href={payslipDownloadUrl(entry.id)} target="_blank" rel="noreferrer">
+                      Download payslip
+                    </a>
+                  </Button>
+                )}
+                {canRespond && !showDispute && (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={acknowledge.isPending}
+                      onClick={async () => {
+                        try {
+                          await acknowledge.mutateAsync();
+                          toast.success("Payslip confirmed");
+                          onClose();
+                        } catch (caught) {
+                          toast.error(caught instanceof ApiError ? caught.message : "Could not confirm");
+                        }
+                      }}
+                    >
+                      Confirm salary
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => setShowDispute(true)}>
+                      Report an issue
+                    </Button>
+                  </>
+                )}
+                {canAdjust && !periodClosed && (
                   <Button variant="outline" size="sm" onClick={() => setAdjusting(true)}>
                     Add adjustment
                   </Button>
+                )}
+              </div>
+
+              {canRespond && showDispute && (
+                <div className="space-y-2">
+                  <Textarea
+                    placeholder="What's wrong with this payslip?"
+                    value={disputeReason}
+                    onChange={(e) => setDisputeReason(e.target.value)}
+                  />
+                  <div className="flex justify-end gap-2">
+                    <Button variant="ghost" size="sm" onClick={() => setShowDispute(false)}>
+                      Cancel
+                    </Button>
+                    <Button
+                      size="sm"
+                      disabled={dispute.isPending || !disputeReason.trim()}
+                      onClick={async () => {
+                        try {
+                          await dispute.mutateAsync(disputeReason);
+                          toast.success("Issue reported — HR will review it");
+                          onClose();
+                        } catch (caught) {
+                          toast.error(caught instanceof ApiError ? caught.message : "Could not submit");
+                        }
+                      }}
+                    >
+                      Submit
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>

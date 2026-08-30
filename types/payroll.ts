@@ -61,6 +61,12 @@ export type PayrollPeriod = {
 };
 
 export type PayrollEntryStatus = "DRAFT" | "CALCULATED" | "PREPARED" | "RELEASED" | "FINALIZED";
+export type PayrollAcknowledgementStatus =
+  | "PENDING"
+  | "ACKNOWLEDGED"
+  | "DISPUTED"
+  | "RESOLVED"
+  | "AUTO_ACKNOWLEDGED";
 export type PayrollLineCategory = "EARNING" | "DEDUCTION";
 export type PayrollLineType =
   | "BASIC"
@@ -68,10 +74,29 @@ export type PayrollLineType =
   | "OVERTIME"
   | "BONUS"
   | "MANUAL_EARNING"
+  | "ARREAR"
   | "LATE_PENALTY"
   | "ABSENCE"
   | "UNPAID_LEAVE"
-  | "MANUAL_DEDUCTION";
+  | "MANUAL_DEDUCTION"
+  | "ARREAR_RECOVERY";
+
+export type PayrollDispute = {
+  id: number;
+  payroll_entry_id: number;
+  status: "OPEN" | "RESOLVED";
+  reason: string;
+  resolution: "UPHELD" | "REJECTED" | null;
+  resolution_note: string | null;
+  resolved_at: string | null;
+  created_at: string | null;
+  entry?: {
+    id: number;
+    net_salary: string;
+    employee: { id: number; full_name: string; employee_code: string };
+    period: string;
+  };
+};
 
 export type PayrollAdjustmentType =
   | "ADD_EARNING"
@@ -94,6 +119,11 @@ export type PayrollEntry = {
   id: number;
   payroll_period_id: number;
   status: PayrollEntryStatus;
+  acknowledgement_status: PayrollAcknowledgementStatus;
+  released_at: string | null;
+  acknowledged_at: string | null;
+  finalized_at: string | null;
+  has_payslip: boolean | null;
   employee: { id: number; full_name: string; employee_code: string };
   period?: {
     id: number;
@@ -120,6 +150,15 @@ export type PayrollEntry = {
     label: string;
     amount: string;
     reason: string;
+    created_at: string | null;
+  }[];
+  disputes?: {
+    id: number;
+    status: "OPEN" | "RESOLVED";
+    reason: string;
+    resolution: "UPHELD" | "REJECTED" | null;
+    resolution_note: string | null;
+    resolved_at: string | null;
     created_at: string | null;
   }[];
 };

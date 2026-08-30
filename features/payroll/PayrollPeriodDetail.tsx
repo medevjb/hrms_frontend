@@ -13,8 +13,29 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useCurrentUser } from "@/features/auth/CurrentUserContext";
 import { ApiError } from "@/lib/api-error";
 import { formatMoney } from "@/lib/format-money";
-import { useGeneratePayroll, usePayrollEntries, usePayrollPeriod } from "@/services/payroll";
+import {
+  useGeneratePayroll,
+  usePayrollEntries,
+  usePayrollPeriod,
+  usePayrollTransition,
+  type PayrollTransition,
+} from "@/services/payroll";
+import type { PermissionName } from "@/types/auth";
+import type { PayrollPeriodStatus } from "@/types/payroll";
 import { PayrollEntryDetailDialog } from "./PayrollEntryDetailDialog";
+
+const NEXT_TRANSITION: Partial<
+  Record<
+    PayrollPeriodStatus,
+    { transition: PayrollTransition; label: string; permission: PermissionName }
+  >
+> = {
+  PROCESSING: { transition: "review", label: "Move to review", permission: "payroll.prepare" },
+  REVIEW: { transition: "release", label: "Release to employees", permission: "payroll.prepare" },
+  EMPLOYEE_CONFIRMATION: { transition: "finalize", label: "Finalise payroll", permission: "payroll.finalize" },
+  FINALIZED: { transition: "mark-paid", label: "Mark as paid", permission: "payroll.finalize" },
+  PAID: { transition: "lock", label: "Lock period", permission: "payroll.finalize" },
+};
 
 export function PayrollPeriodDetail({ periodId }: { periodId: number }) {
   const user = useCurrentUser();
@@ -22,6 +43,7 @@ export function PayrollPeriodDetail({ periodId }: { periodId: number }) {
   const { data: period, isLoading } = usePayrollPeriod(periodId);
   const { data: entries } = usePayrollEntries({ payroll_period_id: periodId });
   const generate = useGeneratePayroll(periodId);
+  const transition = usePayrollTransition(periodId);
   const [selectedEntry, setSelectedEntry] = useState<number | null>(null);
 
   if (isLoading || !period) {
@@ -30,6 +52,18 @@ export function PayrollPeriodDetail({ periodId }: { periodId: number }) {
 
   const rows = entries?.data ?? [];
   const isClosed = ["FINALIZED", "PAID", "LOCKED"].includes(period.status);
+  const next = NEXT_TRANSITION[period.status];
+  const canAdvance = next && user.permissions.includes(next.permission);
+
+  async function runTransition() {
+    if (!next) return;
+    try {
+      await transition.mutateAsync(next.transition);
+      toast.success(next.label);
+    } catch (caught) {
+      toast.error(caught instanceof ApiError ? caught.message : "Could not advance the period");
+    }
+  }
 
   return (
     <>
@@ -49,8 +83,9 @@ export function PayrollPeriodDetail({ periodId }: { periodId: number }) {
             <StatusChip tone={isClosed ? "success" : "info"}>
               {period.status.replace(/_/g, " ")}
             </StatusChip>
-            {canPrepare && !isClosed && (
+            {canPrepare && ["OPEN", "PROCESSING"].includes(period.status) && (
               <Button
+                variant="outline"
                 disabled={generate.isPending}
                 onClick={async () => {
                   try {
@@ -62,6 +97,11 @@ export function PayrollPeriodDetail({ periodId }: { periodId: number }) {
                 }}
               >
                 {rows.length > 0 ? "Recalculate draft" : "Generate draft"}
+              </Button>
+            )}
+            {canAdvance && (
+              <Button disabled={transition.isPending} onClick={runTransition}>
+                {next.label}
               </Button>
             )}
           </div>
