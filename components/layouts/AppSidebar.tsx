@@ -10,6 +10,7 @@ import {
   CalendarDaysIcon,
   ClockIcon,
   LayoutDashboardIcon,
+  MegaphoneIcon,
   SettingsIcon,
   UsersIcon,
 } from "lucide-react";
@@ -60,6 +61,10 @@ const NAV_GROUPS: NavGroup[] = [
       { label: "Shifts", href: "/shifts", icon: ClockIcon },
       { label: "Holidays", href: "/holidays", icon: CalendarDaysIcon },
     ],
+  },
+  {
+    label: "Communication",
+    items: [{ label: "Announcements", href: "/announcements", icon: MegaphoneIcon }],
   },
   {
     label: "Configuration",

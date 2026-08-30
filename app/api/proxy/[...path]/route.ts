@@ -36,11 +36,24 @@ async function proxy(
     return new NextResponse(null, { status: 204 });
   }
 
-  const text = await response.text();
+  const contentType = response.headers.get("Content-Type") ?? "application/json";
 
-  return new NextResponse(text, {
+  // Authorized file streams (docs/PRD.md §82 — holiday notice / payslip
+  // PDFs) are binary; decoding them as text would corrupt the bytes.
+  if (!contentType.includes("application/json")) {
+    const headers = new Headers({ "Content-Type": contentType });
+    const disposition = response.headers.get("Content-Disposition");
+    if (disposition) headers.set("Content-Disposition", disposition);
+
+    return new NextResponse(await response.arrayBuffer(), {
+      status: response.status,
+      headers,
+    });
+  }
+
+  return new NextResponse(await response.text(), {
     status: response.status,
-    headers: { "Content-Type": response.headers.get("Content-Type") ?? "application/json" },
+    headers: { "Content-Type": contentType },
   });
 }
 
