@@ -67,15 +67,15 @@ export function AttendanceList() {
       />
 
       <div className="mb-5 flex flex-wrap items-end gap-3 rounded-2xl border border-border/70 bg-card p-4 shadow-xs">
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">From date</p>
           <DatePicker value={dateFrom} onChange={setDateFrom} placeholder="Any date" />
         </div>
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">To date</p>
           <DatePicker value={dateTo} onChange={setDateTo} placeholder="Any date" />
         </div>
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status</p>
           <Select value={status} onValueChange={(v) => setStatus(v as AttendanceStatus | "all")}>
             <SelectTrigger className="w-48">

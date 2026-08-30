@@ -116,14 +116,14 @@ export function LatePenaltyRulesCard() {
           )
         ) : (
           <div className="space-y-4">
-            <div className="max-w-xs">
+            <div className="max-w-xs space-y-2">
               <label className="text-sm font-medium">Effective from</label>
               <DatePicker value={effectiveFrom} onChange={setEffectiveFrom} />
             </div>
 
             {tiers.map((tier, index) => (
               <div key={index} className="grid grid-cols-[1fr_1fr_1fr_auto] items-end gap-2">
-                <div>
+                <div className="space-y-2">
                   <label className="text-xs text-muted-foreground">Late days ≥</label>
                   <Input
                     type="number"
@@ -132,7 +132,7 @@ export function LatePenaltyRulesCard() {
                     onChange={(e) => patchTier(index, { late_days_threshold: Number(e.target.value) })}
                   />
                 </div>
-                <div>
+                <div className="space-y-2">
                   <label className="text-xs text-muted-foreground">Outcome</label>
                   <Select
                     value={tier.outcome}

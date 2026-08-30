@@ -481,7 +481,7 @@ export function EmployeeDetail({ employeeId }: { employeeId: number }) {
                         {employee.department?.name ?? "No department"}
                       </p>
                     </div>
-                    <div className="space-y-1.5">
+                    <div className="space-y-2">
                       <label className="text-sm font-medium">Move to</label>
                       <Select value={teamChoice ?? undefined} onValueChange={setTeamChoice}>
                         <SelectTrigger className="w-full">
@@ -523,13 +523,13 @@ export function EmployeeDetail({ employeeId }: { employeeId: number }) {
                       value={overrideShiftId}
                       onChange={setOverrideShiftId}
                     />
-                    <div className="space-y-1.5">
+                    <div className="space-y-2">
                       <label htmlFor="override_date" className="text-sm font-medium">
                         Date
                       </label>
                       <DatePicker id="override_date" value={overrideDate} onChange={setOverrideDate} />
                     </div>
-                    <div className="space-y-1.5 sm:col-span-2">
+                    <div className="space-y-2 sm:col-span-2">
                       <label htmlFor="override_reason" className="text-sm font-medium">
                         Reason
                       </label>
@@ -582,7 +582,7 @@ export function EmployeeDetail({ employeeId }: { employeeId: number }) {
                     <EmployeeStatusBadge status={employee.status} />
                   </div>
 
-                  <div className="space-y-1.5">
+                  <div className="space-y-2">
                     <label className="text-sm font-medium">Change status to</label>
                     <Select
                       value={pendingStatus ?? undefined}
@@ -612,7 +612,7 @@ export function EmployeeDetail({ employeeId }: { employeeId: number }) {
                     </Alert>
                   )}
 
-                  <div className="space-y-1.5">
+                  <div className="space-y-2">
                     <label htmlFor="status_reason" className="text-sm font-medium">
                       Reason <span className="text-destructive">*</span>
                     </label>

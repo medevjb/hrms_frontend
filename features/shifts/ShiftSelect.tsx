@@ -23,7 +23,7 @@ export function ShiftSelect({
   const id = useId();
 
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-2">
       {label && (
         <label htmlFor={id} className="text-sm font-medium">
           {label}

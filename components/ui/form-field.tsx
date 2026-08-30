@@ -14,7 +14,7 @@ export function FormField({
   children: React.ReactNode;
 }) {
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-2">
       <Label htmlFor={htmlFor}>{label}</Label>
       {children}
       {description && !error && <p className="text-xs text-muted-foreground">{description}</p>}
