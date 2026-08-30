@@ -3,12 +3,13 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AlertCircleIcon } from "lucide-react";
+import { AlertCircleIcon, ShieldCheckIcon } from "lucide-react";
 import { z } from "zod";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { PasswordInput } from "@/components/ui/password-input";
 
 const credentialsSchema = z.object({
@@ -53,9 +54,11 @@ export function LoginForm() {
 
     const parsed = credentialsSchema.safeParse({ email, password });
     if (!parsed.success) {
-      setFieldErrors(Object.fromEntries(
-        Object.entries(parsed.error.flatten().fieldErrors).map(([k, v]) => [k, v?.[0] ?? ""]),
-      ));
+      setFieldErrors(
+        Object.fromEntries(
+          Object.entries(parsed.error.flatten().fieldErrors).map(([k, v]) => [k, v?.[0] ?? ""]),
+        ),
+      );
       return;
     }
 
@@ -116,31 +119,40 @@ export function LoginForm() {
 
   if (stage.kind === "two-factor") {
     return (
-      <div className="space-y-5">
-        <div className="space-y-1.5">
-          <h1 className="font-heading text-2xl font-semibold tracking-tight">
-            Two-factor verification
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            {useRecoveryCode
-              ? "Enter one of your recovery codes."
-              : "Enter the code from your authenticator app."}
-          </p>
+      <div className="space-y-6">
+        <div className="space-y-3">
+          <div className="flex size-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+            <ShieldCheckIcon className="size-5.5" />
+          </div>
+          <div className="space-y-1.5">
+            <h1 className="font-heading text-2xl font-bold tracking-tight text-foreground">
+              Two-factor verification
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              {useRecoveryCode
+                ? "Enter one of your saved recovery codes."
+                : "Enter the 6-digit code from your authenticator app."}
+            </p>
+          </div>
         </div>
+
         {error && (
           <Alert variant="destructive">
             <AlertCircleIcon />
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
+
         <form onSubmit={handleCodeSubmit} className="space-y-4">
           {useRecoveryCode ? (
             <FormField label="Recovery code" htmlFor="recoveryCode">
               <Input
                 id="recoveryCode"
                 autoFocus
+                autoComplete="one-time-code"
                 value={recoveryCode}
                 onChange={(event) => setRecoveryCode(event.target.value)}
+                className="h-11 font-mono"
               />
             </FormField>
           ) : (
@@ -148,68 +160,92 @@ export function LoginForm() {
               <Input
                 id="code"
                 inputMode="numeric"
+                autoComplete="one-time-code"
                 autoFocus
+                maxLength={6}
                 value={code}
-                onChange={(event) => setCode(event.target.value)}
+                onChange={(event) => setCode(event.target.value.replace(/\D/g, ""))}
+                className="h-12 text-center font-mono text-lg tracking-[0.4em]"
               />
             </FormField>
           )}
-          <Button type="submit" disabled={submitting} className="w-full">
-            Verify
+          <Button type="submit" disabled={submitting} className="h-11 w-full text-sm font-semibold">
+            {submitting ? "Verifying…" : "Verify"}
           </Button>
-          <Button
+          <button
             type="button"
-            variant="ghost"
-            size="sm"
-            className="w-full"
+            className="w-full text-center text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
             onClick={() => {
               setUseRecoveryCode((current) => !current);
               setError(null);
             }}
           >
             {useRecoveryCode ? "Use an authentication code instead" : "Use a recovery code instead"}
-          </Button>
+          </button>
         </form>
       </div>
     );
   }
 
   return (
-    <div className="space-y-5">
-      <h1 className="font-heading text-2xl font-semibold tracking-tight">Sign in</h1>
+    <div className="space-y-6">
+      <div className="space-y-1.5">
+        <h1 className="font-heading text-2xl font-bold tracking-tight text-foreground">Sign in</h1>
+        <p className="text-sm text-muted-foreground">Welcome back — enter your details to continue.</p>
+      </div>
+
       {error && (
         <Alert variant="destructive">
           <AlertCircleIcon />
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
+
       <form onSubmit={handleCredentialsSubmit} className="space-y-4">
         <FormField label="Email" htmlFor="email" error={fieldErrors.email}>
           <Input
             id="email"
+            type="email"
             autoComplete="username"
             autoFocus
+            placeholder="you@company.com"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
+            className="h-11"
           />
         </FormField>
-        <FormField label="Password" htmlFor="password" error={fieldErrors.password}>
+
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="password">Password</Label>
+            <Link
+              href="/forgot-password"
+              className="text-xs font-medium text-primary transition-colors hover:text-primary/80"
+            >
+              Forgot password?
+            </Link>
+          </div>
           <PasswordInput
             id="password"
             autoComplete="current-password"
+            placeholder="••••••••••"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
+            className="h-11"
           />
-        </FormField>
-        <Button type="submit" disabled={submitting} className="w-full">
-          Sign in
-        </Button>
-        <div className="text-center">
-          <Link href="/forgot-password" className="text-sm text-primary hover:underline">
-            Forgot your password?
-          </Link>
+          {fieldErrors.password && (
+            <p className="text-xs font-medium text-destructive">{fieldErrors.password}</p>
+          )}
         </div>
+
+        <Button type="submit" disabled={submitting} className="h-11 w-full text-sm font-semibold">
+          {submitting ? "Signing in…" : "Sign in"}
+        </Button>
       </form>
+
+      <p className="text-center text-xs text-muted-foreground">
+        Access is provisioned by your HR team. Contact them if you can&apos;t sign in.
+      </p>
     </div>
   );
 }

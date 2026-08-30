@@ -46,8 +46,8 @@ export function ForgotPasswordForm() {
 
   if (sent) {
     return (
-      <div className="space-y-5">
-        <h1 className="font-heading text-2xl font-semibold tracking-tight">Check your email</h1>
+      <div className="space-y-6">
+        <h1 className="font-heading text-2xl font-bold tracking-tight text-foreground">Check your email</h1>
         <Alert className="border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-900 dark:bg-emerald-500/10 dark:text-emerald-300">
           <CircleCheckIcon className="text-emerald-600 dark:text-emerald-400" />
           <AlertDescription className="text-emerald-800 dark:text-emerald-300">
@@ -59,9 +59,9 @@ export function ForgotPasswordForm() {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <div className="space-y-1.5">
-        <h1 className="font-heading text-2xl font-semibold tracking-tight">
+        <h1 className="font-heading text-2xl font-bold tracking-tight text-foreground">
           Reset your password
         </h1>
         <p className="text-sm text-muted-foreground">
