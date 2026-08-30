@@ -14,9 +14,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { ApiError } from "@/lib/api-error";
 import { usePayrollSettings, useUpdatePayrollSettings } from "@/services/settings";
 import type { PayrollSettings, SalaryDayCalculationMethod } from "@/types/settings";
+import { LatePenaltyRulesCard } from "./LatePenaltyRulesCard";
+
+const TOGGLES: { key: keyof PayrollSettings; label: string }[] = [
+  { key: "late_penalty_enabled", label: "Apply late penalties" },
+  { key: "absence_deduction_enabled", label: "Deduct unauthorised absence" },
+  { key: "unpaid_leave_deduction_enabled", label: "Deduct unpaid leave" },
+  { key: "overtime_earnings_enabled", label: "Pay approved overtime" },
+];
 
 const CALCULATION_METHODS: { value: SalaryDayCalculationMethod; label: string }[] = [
   { value: "FIXED_30_DAYS", label: "Fixed 30 days" },
@@ -95,6 +104,36 @@ function Form({ initial }: { initial: PayrollSettings }) {
           </SelectContent>
         </Select>
       </FormField>
+      <FormField
+        label="Dispute window (days)"
+        htmlFor="dispute_window_days"
+        description="How long an employee has to raise a payroll dispute after release (§147)"
+      >
+        <Input
+          id="dispute_window_days"
+          type="number"
+          min={1}
+          max={60}
+          value={values.dispute_window_days}
+          onChange={(e) => setValues((v) => ({ ...v, dispute_window_days: Number(e.target.value) }))}
+        />
+      </FormField>
+
+      <div className="space-y-3 border-t border-border pt-4">
+        {TOGGLES.map((toggle) => (
+          <div key={toggle.key} className="flex items-center justify-between">
+            <label htmlFor={toggle.key} className="text-sm font-medium">
+              {toggle.label}
+            </label>
+            <Switch
+              id={toggle.key}
+              checked={Boolean(values[toggle.key])}
+              onCheckedChange={(checked) => setValues((v) => ({ ...v, [toggle.key]: checked }))}
+            />
+          </div>
+        ))}
+      </div>
+
       <Button type="submit" disabled={update.isPending}>
         Save payroll settings
       </Button>
@@ -107,5 +146,10 @@ export function PayrollSettingsTab() {
 
   if (isLoading || !data) return <PageLoadingSkeleton />;
 
-  return <Form initial={data} />;
+  return (
+    <div className="space-y-8">
+      <Form initial={data} />
+      <LatePenaltyRulesCard />
+    </div>
+  );
 }

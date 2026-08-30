@@ -41,6 +41,23 @@ export type SalaryDayCalculationMethod = "FIXED_30_DAYS" | "CALENDAR_DAYS" | "WO
 export type PayrollSettings = {
   payroll_cutoff_day: number | null;
   salary_day_calculation_method: SalaryDayCalculationMethod;
+  late_penalty_enabled: boolean;
+  absence_deduction_enabled: boolean;
+  unpaid_leave_deduction_enabled: boolean;
+  overtime_earnings_enabled: boolean;
+  dispute_window_days: number;
+};
+
+export type LatePenaltyOutcome = "WARNING" | "DEDUCTION";
+export type LatePenaltyDeductionMode = "DAY_FRACTION" | "FIXED_AMOUNT";
+
+export type LatePenaltyRule = {
+  id: number;
+  effective_from: string;
+  late_days_threshold: number;
+  outcome: LatePenaltyOutcome;
+  deduction_mode: LatePenaltyDeductionMode | null;
+  deduction_value: string | null;
 };
 
 export type LeaveSettings = {

@@ -36,6 +36,7 @@ import {
 import { useCreateShiftOverride } from "@/services/shifts";
 import { useTeams } from "@/services/teams";
 import type { EmployeeStatus } from "@/types/organization";
+import { EmployeeSalarySection } from "./EmployeeSalarySection";
 import { EmployeeStatusBadge } from "./EmployeeStatusBadge";
 
 const STATUS_OPTIONS: { value: EmployeeStatus; label: string }[] = [
@@ -207,6 +208,8 @@ export function EmployeeDetail({ employeeId }: { employeeId: number }) {
           <ShiftSelect label="" value={pendingShiftId} onChange={setPendingShiftId} />
         </CardContent>
       </Card>
+
+      <EmployeeSalarySection employeeId={employeeId} employeeName={employee.full_name} />
 
       <Card>
         <CardHeader>

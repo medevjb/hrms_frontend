@@ -13,6 +13,7 @@ import {
   MegaphoneIcon,
   SettingsIcon,
   UsersIcon,
+  WalletIcon,
 } from "lucide-react";
 import {
   Sidebar,
@@ -53,6 +54,7 @@ const NAV_GROUPS: NavGroup[] = [
       { label: "Attendance", href: "/attendance", icon: CalendarCheckIcon },
       { label: "Leave", href: "/leave", icon: CalendarClockIcon },
       { label: "Overtime", href: "/overtime", icon: AlarmClockIcon },
+      { label: "Payroll", href: "/payroll", icon: WalletIcon },
     ],
   },
   {
