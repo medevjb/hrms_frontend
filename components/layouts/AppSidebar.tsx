@@ -10,6 +10,7 @@ import {
   CalendarDaysIcon,
   ClockIcon,
   FileBarChartIcon,
+  ScrollTextIcon,
   LayoutDashboardIcon,
   MegaphoneIcon,
   SettingsIcon,
@@ -71,7 +72,10 @@ const NAV_GROUPS: NavGroup[] = [
   },
   {
     label: "Insights",
-    items: [{ label: "Reports", href: "/reports", icon: FileBarChartIcon }],
+    items: [
+      { label: "Reports", href: "/reports", icon: FileBarChartIcon },
+      { label: "Audit log", href: "/audit", icon: ScrollTextIcon },
+    ],
   },
   {
     label: "Configuration",
