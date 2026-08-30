@@ -36,6 +36,7 @@ import {
 import { useCreateShiftOverride } from "@/services/shifts";
 import { useTeams } from "@/services/teams";
 import type { EmployeeStatus } from "@/types/organization";
+import { EmployeeDocumentsSection } from "./EmployeeDocumentsSection";
 import { EmployeeSalarySection } from "./EmployeeSalarySection";
 import { EmployeeStatusBadge } from "./EmployeeStatusBadge";
 
@@ -210,6 +211,8 @@ export function EmployeeDetail({ employeeId }: { employeeId: number }) {
       </Card>
 
       <EmployeeSalarySection employeeId={employeeId} employeeName={employee.full_name} />
+
+      <EmployeeDocumentsSection employeeId={employeeId} />
 
       <Card>
         <CardHeader>

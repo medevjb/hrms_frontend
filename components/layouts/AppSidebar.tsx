@@ -9,6 +9,7 @@ import {
   CalendarClockIcon,
   CalendarDaysIcon,
   ClockIcon,
+  FileBarChartIcon,
   LayoutDashboardIcon,
   MegaphoneIcon,
   SettingsIcon,
@@ -67,6 +68,10 @@ const NAV_GROUPS: NavGroup[] = [
   {
     label: "Communication",
     items: [{ label: "Announcements", href: "/announcements", icon: MegaphoneIcon }],
+  },
+  {
+    label: "Insights",
+    items: [{ label: "Reports", href: "/reports", icon: FileBarChartIcon }],
   },
   {
     label: "Configuration",
