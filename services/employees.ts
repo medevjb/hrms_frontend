@@ -3,10 +3,28 @@ import { browserFetch } from "@/lib/browser-api";
 import type { PaginationMeta } from "@/types/api";
 import type { Employee, EmployeeStatus, EmploymentType } from "@/types/organization";
 
-type EmployeeFilters = {
+export type EmployeeSort =
+  | "name"
+  | "name_desc"
+  | "joined"
+  | "joined_desc"
+  | "code"
+  | "code_desc";
+
+export type EmployeeFilters = {
+  search?: string;
   status?: EmployeeStatus;
+  employment_type?: EmploymentType;
   team_id?: number;
   department_id?: number;
+  team_leader_id?: number;
+  operation_manager_id?: number;
+  shift_id?: number;
+  overtime_eligible?: boolean;
+  unassigned?: boolean;
+  joined_from?: string;
+  joined_to?: string;
+  sort?: EmployeeSort;
   page?: number;
   per_page?: number;
 };
@@ -15,11 +33,29 @@ type EmployeeListResult = { data: Employee[]; meta: PaginationMeta };
 
 function buildQuery(filters: EmployeeFilters): string {
   const params = new URLSearchParams();
-  if (filters.status) params.set("filter[status]", filters.status);
-  if (filters.team_id) params.set("filter[team_id]", String(filters.team_id));
-  if (filters.department_id) params.set("filter[department_id]", String(filters.department_id));
+  const setFilter = (key: string, value: string | number | boolean | undefined) => {
+    if (value === undefined || value === "") return;
+    params.set(`filter[${key}]`, typeof value === "boolean" ? (value ? "1" : "0") : String(value));
+  };
+
+  setFilter("search", filters.search);
+  setFilter("status", filters.status);
+  setFilter("employment_type", filters.employment_type);
+  setFilter("team_id", filters.team_id);
+  setFilter("department_id", filters.department_id);
+  setFilter("team_leader_id", filters.team_leader_id);
+  setFilter("operation_manager_id", filters.operation_manager_id);
+  setFilter("shift_id", filters.shift_id);
+  setFilter("unassigned", filters.unassigned || undefined);
+  setFilter("joined_from", filters.joined_from);
+  setFilter("joined_to", filters.joined_to);
+  if (filters.overtime_eligible !== undefined) {
+    params.set("filter[overtime_eligible]", filters.overtime_eligible ? "1" : "0");
+  }
+  if (filters.sort) params.set("sort", filters.sort);
   if (filters.page) params.set("page", String(filters.page));
   if (filters.per_page) params.set("per_page", String(filters.per_page));
+
   const query = params.toString();
   return query ? `?${query}` : "";
 }

@@ -2,42 +2,30 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { ChevronLeftIcon, ChevronRightIcon, SearchIcon } from "lucide-react";
+import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 import { toast } from "sonner";
 import { BulkBar } from "@/components/ui/BulkBar";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { Input } from "@/components/ui/input";
 import { PageLoadingSkeleton } from "@/components/ui/PageLoadingSkeleton";
 import { RowActions } from "@/components/ui/RowActions";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useCurrentUser } from "@/features/auth/CurrentUserContext";
+import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { useRowSelection } from "@/hooks/use-row-selection";
 import { apiErrorMessage } from "@/lib/api-error";
 import { useDeleteEmployee, useEmployees } from "@/services/employees";
-import type { EmployeeStatus } from "@/types/organization";
 import { ChangeEmployeeStatusDialog } from "./ChangeEmployeeStatusDialog";
+import {
+  EMPTY_EMPLOYEE_FILTERS,
+  EmployeeFilterBar,
+  isEmployeeFilterActive,
+  toServiceFilters,
+  type EmployeeUiFilters,
+} from "./EmployeeFilterBar";
 import { EmployeeStatusBadge } from "./EmployeeStatusBadge";
-
-const STATUS_OPTIONS: { value: EmployeeStatus; label: string }[] = [
-  { value: "INVITED", label: "Invited" },
-  { value: "ACTIVE", label: "Active" },
-  { value: "PROBATION", label: "Probation" },
-  { value: "NOTICE_PERIOD", label: "Notice period" },
-  { value: "SUSPENDED", label: "Suspended" },
-  { value: "RESIGNED", label: "Resigned" },
-  { value: "TERMINATED", label: "Terminated" },
-  { value: "ARCHIVED", label: "Archived" },
-];
 
 export function EmployeesTable({ onInvite }: { onInvite?: () => void }) {
   const user = useCurrentUser();
@@ -45,67 +33,34 @@ export function EmployeesTable({ onInvite }: { onInvite?: () => void }) {
   const canArchive = user.permissions.includes("employee.archive");
   const selectable = canUpdate || canArchive;
 
-  const [status, setStatus] = useState<EmployeeStatus | "all">("all");
-  const [search, setSearch] = useState("");
+  const [filters, setFilters] = useState<EmployeeUiFilters>(EMPTY_EMPLOYEE_FILTERS);
   const [page, setPage] = useState(1);
   const [statusTarget, setStatusTarget] = useState<number[] | null>(null);
   const [pendingDelete, setPendingDelete] = useState<{ ids: number[]; label: string } | null>(null);
 
-  const { data, isLoading } = useEmployees({ status: status === "all" ? undefined : status, page });
-  const deleteEmployee = useDeleteEmployee();
-
-  const employees = useMemo(
-    () =>
-      (data?.data ?? []).filter((employee) =>
-        search.trim() === ""
-          ? true
-          : employee.full_name.toLowerCase().includes(search.toLowerCase()) ||
-            employee.employee_code.toLowerCase().includes(search.toLowerCase()),
-      ),
-    [data, search],
+  const debouncedSearch = useDebouncedValue(filters.search, 300);
+  const serviceFilters = useMemo(
+    () => toServiceFilters({ ...filters, search: debouncedSearch }),
+    [filters, debouncedSearch],
   );
 
+  const { data, isLoading } = useEmployees({ ...serviceFilters, page });
+  const deleteEmployee = useDeleteEmployee();
+
+  const employees = data?.data ?? [];
   const selection = useRowSelection(employees, (employee) => employee.id);
   const allSelectedInvited =
     selection.count > 0 && selection.selected.every((employee) => employee.status === "INVITED");
 
-  if (isLoading) {
-    return <PageLoadingSkeleton />;
+  function updateFilters(next: EmployeeUiFilters) {
+    setFilters(next);
+    setPage(1);
+    selection.clear();
   }
 
   return (
     <>
-      <div className="mb-4 flex flex-wrap gap-2">
-        <div className="relative w-64">
-          <SearchIcon className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Search by name or code"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            className="pl-8"
-          />
-        </div>
-        <Select
-          value={status}
-          onValueChange={(value) => {
-            setStatus(value as EmployeeStatus | "all");
-            setPage(1);
-            selection.clear();
-          }}
-        >
-          <SelectTrigger className="w-44">
-            <SelectValue placeholder="All statuses" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All statuses</SelectItem>
-            {STATUS_OPTIONS.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      <EmployeeFilterBar filters={filters} onChange={updateFilters} />
 
       {selectable && (
         <BulkBar count={selection.count} onClear={selection.clear}>
@@ -140,11 +95,23 @@ export function EmployeesTable({ onInvite }: { onInvite?: () => void }) {
         </BulkBar>
       )}
 
-      {employees.length === 0 ? (
+      {isLoading ? (
+        <PageLoadingSkeleton />
+      ) : employees.length === 0 ? (
         <EmptyState
-          title="No employees found"
-          description="Invite your first employee to get started."
-          action={onInvite ? { label: "Invite employee", onClick: onInvite } : undefined}
+          title={isEmployeeFilterActive(filters) ? "No matches" : "No employees found"}
+          description={
+            isEmployeeFilterActive(filters)
+              ? "No one matches these filters. Try widening them or clearing all."
+              : "Invite your first employee to get started."
+          }
+          action={
+            isEmployeeFilterActive(filters)
+              ? { label: "Clear all filters", onClick: () => updateFilters(EMPTY_EMPLOYEE_FILTERS) }
+              : onInvite
+                ? { label: "Invite employee", onClick: onInvite }
+                : undefined
+          }
         />
       ) : (
         <>
@@ -178,7 +145,10 @@ export function EmployeesTable({ onInvite }: { onInvite?: () => void }) {
               </TableHeader>
               <TableBody>
                 {employees.map((employee) => (
-                  <TableRow key={employee.id} data-state={selection.isSelected(employee.id) ? "selected" : undefined}>
+                  <TableRow
+                    key={employee.id}
+                    data-state={selection.isSelected(employee.id) ? "selected" : undefined}
+                  >
                     {selectable && (
                       <TableCell>
                         <Checkbox
@@ -189,8 +159,11 @@ export function EmployeesTable({ onInvite }: { onInvite?: () => void }) {
                       </TableCell>
                     )}
                     <TableCell>
-                      <Link href={`/employees/${employee.id}`} className="group flex items-center gap-3 font-semibold text-foreground hover:text-primary transition-colors">
-                        <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary border border-primary/20">
+                      <Link
+                        href={`/employees/${employee.id}`}
+                        className="group flex items-center gap-3 font-semibold text-foreground transition-colors hover:text-primary"
+                      >
+                        <div className="flex size-8 shrink-0 items-center justify-center rounded-full border border-primary/20 bg-primary/10 text-xs font-bold text-primary">
                           {employee.full_name.charAt(0).toUpperCase()}
                         </div>
                         <span className="truncate group-hover:underline">{employee.full_name}</span>
@@ -202,7 +175,9 @@ export function EmployeesTable({ onInvite }: { onInvite?: () => void }) {
                       </span>
                     </TableCell>
                     <TableCell className="font-medium text-foreground">{employee.designation}</TableCell>
-                    <TableCell className="text-muted-foreground">{employee.department?.name ?? "—"}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {employee.department?.name ?? "—"}
+                    </TableCell>
                     <TableCell className="text-muted-foreground">{employee.team?.name ?? "—"}</TableCell>
                     <TableCell>
                       <EmployeeStatusBadge status={employee.status} />
@@ -267,7 +242,9 @@ export function EmployeesTable({ onInvite }: { onInvite?: () => void }) {
         open={pendingDelete !== null}
         onOpenChange={(next) => !next && setPendingDelete(null)}
         title={
-          (pendingDelete?.ids.length ?? 0) > 1 ? "Delete invited employees?" : "Delete invited employee?"
+          (pendingDelete?.ids.length ?? 0) > 1
+            ? "Delete invited employees?"
+            : "Delete invited employee?"
         }
         description={`Permanently removes ${pendingDelete?.label ?? "this person"} and the paired pending user account${
           (pendingDelete?.ids.length ?? 0) > 1 ? "s" : ""
