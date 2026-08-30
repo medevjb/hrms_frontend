@@ -56,7 +56,7 @@ export function OvertimeRecordsList({ mode }: { mode: "mine" | "pending_approval
 
   return (
     <>
-      <div className="overflow-hidden rounded-xl border border-border">
+      <div className="overflow-hidden rounded-2xl border border-border/70 bg-card shadow-xs">
         <Table>
           <TableHeader>
             <TableRow>

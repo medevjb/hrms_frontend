@@ -66,28 +66,31 @@ export function AttendanceList() {
         description="Everyone's attendance within your visibility — filter by date, status, or team."
       />
 
-      <div className="mb-4 flex flex-wrap items-end gap-3">
+      <div className="mb-5 flex flex-wrap items-end gap-3 rounded-2xl border border-border/70 bg-card p-4 shadow-xs">
         <div className="space-y-1.5">
-          <p className="text-sm font-medium">From</p>
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">From date</p>
           <DatePicker value={dateFrom} onChange={setDateFrom} placeholder="Any date" />
         </div>
         <div className="space-y-1.5">
-          <p className="text-sm font-medium">To</p>
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">To date</p>
           <DatePicker value={dateTo} onChange={setDateTo} placeholder="Any date" />
         </div>
-        <Select value={status} onValueChange={(v) => setStatus(v as AttendanceStatus | "all")}>
-          <SelectTrigger className="w-44">
-            <SelectValue placeholder="All statuses" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All statuses</SelectItem>
-            {STATUS_OPTIONS.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="space-y-1.5">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status</p>
+          <Select value={status} onValueChange={(v) => setStatus(v as AttendanceStatus | "all")}>
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="All statuses" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All statuses</SelectItem>
+              {STATUS_OPTIONS.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {isLoading ? (
@@ -95,7 +98,7 @@ export function AttendanceList() {
       ) : !data || data.data.length === 0 ? (
         <EmptyState title="No attendance records" description="Nothing matches these filters yet." />
       ) : (
-        <div className="overflow-hidden rounded-xl border border-border">
+        <div className="overflow-hidden rounded-2xl border border-border/70 bg-card shadow-xs">
           <Table>
             <TableHeader>
               <TableRow>
@@ -106,26 +109,37 @@ export function AttendanceList() {
                 <TableHead>Check-out</TableHead>
                 <TableHead>Late</TableHead>
                 <TableHead>Status</TableHead>
-                {canCorrect && <TableHead />}
+                {canCorrect && <TableHead className="text-right">Actions</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
               {data.data.map((record) => (
                 <TableRow key={record.id}>
                   <TableCell>
-                    <div className="font-medium">{record.employee.full_name}</div>
-                    <div className="font-mono text-xs text-muted-foreground">{record.employee.employee_code}</div>
+                    <div className="flex items-center gap-2.5">
+                      <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                        {record.employee.full_name.charAt(0)}
+                      </div>
+                      <div>
+                        <div className="font-semibold text-foreground">{record.employee.full_name}</div>
+                        <div className="font-mono text-[11px] text-muted-foreground">{record.employee.employee_code}</div>
+                      </div>
+                    </div>
                   </TableCell>
-                  <TableCell className="font-mono text-sm">{record.work_date}</TableCell>
-                  <TableCell>{record.shift?.name ?? "—"}</TableCell>
-                  <TableCell className="font-mono text-sm">
+                  <TableCell className="font-mono text-xs font-semibold text-foreground">{record.work_date}</TableCell>
+                  <TableCell className="text-xs font-medium text-muted-foreground">{record.shift?.name ?? "—"}</TableCell>
+                  <TableCell className="font-mono text-xs text-foreground">
                     {record.check_in ? formatTimeInTimezone(record.check_in, user.organization.timezone) : "—"}
                   </TableCell>
-                  <TableCell className="font-mono text-sm">
+                  <TableCell className="font-mono text-xs text-foreground">
                     {record.check_out ? formatTimeInTimezone(record.check_out, user.organization.timezone) : "—"}
                   </TableCell>
-                  <TableCell className="font-mono text-sm">
-                    {record.late_minutes !== null ? `${record.late_minutes}m` : "—"}
+                  <TableCell className="font-mono text-xs text-muted-foreground">
+                    {record.late_minutes !== null && record.late_minutes > 0 ? (
+                      <span className="font-semibold text-amber-600 dark:text-amber-400">{record.late_minutes}m</span>
+                    ) : (
+                      "—"
+                    )}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1.5">
@@ -138,14 +152,15 @@ export function AttendanceList() {
                     </div>
                   </TableCell>
                   {canCorrect && (
-                    <TableCell>
+                    <TableCell className="text-right">
                       <Button
                         variant="ghost"
                         size="icon-sm"
                         onClick={() => setEditing(record)}
                         aria-label="Correct attendance"
+                        className="rounded-lg hover:bg-muted"
                       >
-                        <PencilIcon />
+                        <PencilIcon className="size-3.5 text-muted-foreground" />
                       </Button>
                     </TableCell>
                   )}

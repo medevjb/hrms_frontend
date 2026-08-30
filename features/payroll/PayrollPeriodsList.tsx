@@ -110,7 +110,7 @@ export function PayrollPeriodsList() {
           description="Create a period for the month, then generate the draft to calculate every employee's pay."
         />
       ) : (
-        <div className="overflow-hidden rounded-xl border border-border">
+        <div className="overflow-hidden rounded-2xl border border-border/70 bg-card shadow-xs">
           <Table>
             <TableHeader>
               <TableRow>
@@ -119,13 +119,13 @@ export function PayrollPeriodsList() {
                 <TableHead>Status</TableHead>
                 <TableHead>Entries</TableHead>
                 <TableHead>Net total</TableHead>
-                <TableHead />
+                <TableHead className="text-right">Action</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {periods.map((period) => (
                 <TableRow key={period.id}>
-                  <TableCell className="font-medium">{period.label}</TableCell>
+                  <TableCell className="font-bold text-foreground">{period.label}</TableCell>
                   <TableCell className="font-mono text-xs text-muted-foreground">
                     {period.start_date} → {period.end_date}
                   </TableCell>
@@ -134,16 +134,14 @@ export function PayrollPeriodsList() {
                       {period.status.replace(/_/g, " ")}
                     </StatusChip>
                   </TableCell>
-                  <TableCell className="font-mono text-sm">{period.entry_count ?? 0}</TableCell>
-                  <TableCell className="font-mono text-sm">
+                  <TableCell className="font-mono text-xs font-semibold">{period.entry_count ?? 0}</TableCell>
+                  <TableCell className="font-mono text-xs font-bold text-foreground">
                     {period.net_total ? formatMoney(period.net_total) : "—"}
                   </TableCell>
-                  <TableCell>
-                    <div className="flex justify-end">
-                      <Button variant="ghost" size="sm" asChild>
-                        <Link href={`/payroll/${period.id}`}>Open</Link>
-                      </Button>
-                    </div>
+                  <TableCell className="text-right">
+                    <Button variant="outline" size="sm" className="rounded-xl font-semibold" asChild>
+                      <Link href={`/payroll/${period.id}`}>Open period</Link>
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}

@@ -59,7 +59,7 @@ export function TodayAttendanceCard() {
   async function handleCheckOut() {
     try {
       await checkOut.mutateAsync();
-      toast.success("Checked out");
+      toast.success("Checked out successfully");
     } catch (caught) {
       toast.error(caught instanceof ApiError ? caught.message : "Check-out failed");
     }
@@ -71,39 +71,52 @@ export function TodayAttendanceCard() {
     : (record?.worked_minutes ?? null);
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className="relative overflow-hidden border-primary/20 bg-gradient-to-r from-card via-card to-primary/5 shadow-sm">
+      <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle>Today&apos;s attendance</CardTitle>
+          <div className="flex items-center gap-2">
+            <div className="flex size-2 rounded-full bg-emerald-500 animate-pulse" />
+            <CardTitle className="text-base font-bold">Today&apos;s attendance</CardTitle>
+          </div>
           {record && <StatusChip tone={STATUS_TONE[record.status]}>{record.status.replace("_", " ")}</StatusChip>}
         </div>
       </CardHeader>
       <CardContent>
         {!record ? (
-          <p className="text-sm text-muted-foreground">You haven&apos;t checked in yet today.</p>
+          <div className="flex items-center justify-between py-1">
+            <p className="text-sm text-muted-foreground">You haven&apos;t checked in yet today.</p>
+          </div>
         ) : (
-          <div className="flex flex-wrap items-center gap-6">
-            <div className="flex items-center gap-2">
-              <CheckCircle2Icon className="size-4 text-emerald-600" />
-              <div>
-                <p className="text-xs text-muted-foreground">Checked in</p>
-                <p className="font-mono text-sm">
-                  {record.check_in ? formatTimeInTimezone(record.check_in, user.organization.timezone) : "—"}
-                </p>
-              </div>
-            </div>
-            {workedMinutes !== null && (
-              <div className="flex items-center gap-2">
-                <ClockIcon className="size-4 text-muted-foreground" />
+          <div className="flex flex-wrap items-center justify-between gap-6">
+            <div className="flex items-center gap-6">
+              <div className="flex items-center gap-3">
+                <div className="flex size-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 border border-emerald-500/20">
+                  <CheckCircle2Icon className="size-5" />
+                </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">{record.check_out ? "Worked" : "Working"}</p>
-                  <p className="font-mono text-sm">{formatDuration(workedMinutes)}</p>
+                  <p className="text-xs font-medium text-muted-foreground">Checked in</p>
+                  <p className="font-mono text-sm font-bold text-foreground">
+                    {record.check_in ? formatTimeInTimezone(record.check_in, user.organization.timezone) : "—"}
+                  </p>
                 </div>
               </div>
-            )}
+
+              {workedMinutes !== null && (
+                <div className="flex items-center gap-3 border-l border-border/60 pl-6">
+                  <div className="flex size-10 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400 border border-indigo-500/20">
+                    <ClockIcon className="size-5" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground">{record.check_out ? "Total worked" : "Current duration"}</p>
+                    <p className="font-mono text-sm font-bold text-foreground">{formatDuration(workedMinutes)}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
             {!record.check_out && (
-              <Button size="sm" variant="outline" onClick={handleCheckOut} disabled={checkOut.isPending}>
-                <LogOutIcon />
+              <Button size="sm" variant="outline" className="rounded-xl border-rose-500/30 text-rose-600 hover:bg-rose-50 hover:text-rose-700 dark:hover:bg-rose-950/40" onClick={handleCheckOut} disabled={checkOut.isPending}>
+                <LogOutIcon className="size-4 mr-1.5" />
                 Check out
               </Button>
             )}
@@ -113,3 +126,4 @@ export function TodayAttendanceCard() {
     </Card>
   );
 }
+

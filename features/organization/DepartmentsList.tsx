@@ -51,11 +51,11 @@ export function DepartmentsList() {
           action={canManage ? { label: "Add department", onClick: open } : undefined}
         />
       ) : (
-        <div className="overflow-hidden rounded-xl border border-border">
+        <div className="overflow-hidden rounded-2xl border border-border/70 bg-card shadow-xs">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
+                <TableHead>Department</TableHead>
                 <TableHead>Operation Manager</TableHead>
                 <TableHead>Status</TableHead>
                 {canManage && <TableHead className="text-right">Actions</TableHead>}
@@ -67,19 +67,33 @@ export function DepartmentsList() {
                   <TableCell>
                     <Link
                       href={`/departments/${department.id}`}
-                      className="font-medium text-primary hover:underline"
+                      className="group flex items-center gap-3 font-semibold text-foreground hover:text-primary transition-colors"
                     >
-                      {department.name}
+                      <div className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-600 font-bold border border-indigo-500/20">
+                        {department.name.charAt(0).toUpperCase()}
+                      </div>
+                      <span className="truncate group-hover:underline">{department.name}</span>
                     </Link>
                   </TableCell>
-                  <TableCell>{department.operation_manager?.full_name ?? "—"}</TableCell>
+                  <TableCell className="font-medium text-foreground">
+                    {department.operation_manager ? (
+                      <div className="flex items-center gap-2">
+                        <div className="flex size-6 items-center justify-center rounded-full bg-accent text-[10px] font-bold text-accent-foreground">
+                          {department.operation_manager.full_name.charAt(0)}
+                        </div>
+                        <span>{department.operation_manager.full_name}</span>
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
+                  </TableCell>
                   <TableCell>
                     <StatusChip tone={department.active ? "success" : "neutral"}>
                       {department.active ? "Active" : "Inactive"}
                     </StatusChip>
                   </TableCell>
                   {canManage && (
-                    <TableCell>
+                    <TableCell className="text-right">
                       <RowActions
                         viewHref={`/departments/${department.id}`}
                         onDelete={() => setPendingDelete(department)}

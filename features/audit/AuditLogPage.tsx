@@ -14,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { StatusChip } from "@/components/ui/status-chip";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useAuditLogs } from "@/services/audit";
 import { AUDIT_ACTIONS } from "@/types/audit";
@@ -39,25 +40,27 @@ export function AuditLogPage() {
         description="Every sensitive action, append-only. Salary changes, payroll adjustments, approvals, role grants, exports."
       />
 
-      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <FormField label="Action">
-          <Select value={action || "all"} onValueChange={(v) => { setAction(v === "all" ? "" : v); setPage(1); }}>
-            <SelectTrigger className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All actions</SelectItem>
-              {AUDIT_ACTIONS.map((value) => (
-                <SelectItem key={value} value={value}>
-                  {label(value)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </FormField>
-        <FormField label="From">
-          <DatePicker value={dateFrom} onChange={(v) => { setDateFrom(v); setPage(1); }} />
-        </FormField>
+      <div className="mb-6 rounded-2xl border border-border/70 bg-card p-4 shadow-xs">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <FormField label="Filter by Action">
+            <Select value={action || "all"} onValueChange={(v) => { setAction(v === "all" ? "" : v); setPage(1); }}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All actions</SelectItem>
+                {AUDIT_ACTIONS.map((value) => (
+                  <SelectItem key={value} value={value}>
+                    {label(value)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </FormField>
+          <FormField label="From Date">
+            <DatePicker value={dateFrom} onChange={(v) => { setDateFrom(v); setPage(1); }} />
+          </FormField>
+        </div>
       </div>
 
       {isLoading || !data ? (
@@ -66,32 +69,34 @@ export function AuditLogPage() {
         <EmptyState title="No audit entries" description="Nothing matches the current filters." />
       ) : (
         <>
-          <div className="overflow-x-auto rounded-xl border border-border">
+          <div className="overflow-x-auto rounded-2xl border border-border/70 bg-card shadow-xs">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>When</TableHead>
-                  <TableHead>Who</TableHead>
+                  <TableHead>Timestamp</TableHead>
+                  <TableHead>User</TableHead>
                   <TableHead>Action</TableHead>
-                  <TableHead>Entity</TableHead>
-                  <TableHead>Detail</TableHead>
+                  <TableHead>Target Entity</TableHead>
+                  <TableHead>Details & Changes</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {data.data.map((log) => (
                   <TableRow key={log.id}>
-                    <TableCell className="font-mono text-xs whitespace-nowrap">
+                    <TableCell className="font-mono text-xs text-muted-foreground whitespace-nowrap">
                       {new Date(log.created_at).toLocaleString()}
                     </TableCell>
-                    <TableCell className="text-sm">{log.user?.name ?? "System"}</TableCell>
-                    <TableCell className="text-sm">{label(log.action)}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
+                    <TableCell className="font-semibold text-foreground">{log.user?.name ?? "System"}</TableCell>
+                    <TableCell>
+                      <StatusChip tone="info">{label(log.action)}</StatusChip>
+                    </TableCell>
+                    <TableCell className="font-mono text-xs text-muted-foreground">
                       {log.entity_type ? `${log.entity_type} #${log.entity_id ?? ""}` : "—"}
                     </TableCell>
                     <TableCell className="max-w-md text-xs text-muted-foreground">
-                      {log.reason ? <span>{log.reason}</span> : null}
+                      {log.reason ? <span className="font-medium text-foreground mr-1">{log.reason}</span> : null}
                       {log.new_data ? (
-                        <code className="ml-1 break-all">{JSON.stringify(log.new_data)}</code>
+                        <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[11px] break-all">{JSON.stringify(log.new_data)}</code>
                       ) : null}
                     </TableCell>
                   </TableRow>

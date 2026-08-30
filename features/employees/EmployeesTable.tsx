@@ -147,7 +147,7 @@ export function EmployeesTable() {
         />
       ) : (
         <>
-          <div className="overflow-hidden rounded-xl border border-border">
+          <div className="overflow-hidden rounded-2xl border border-border/70 bg-card shadow-xs">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -166,7 +166,7 @@ export function EmployeesTable() {
                       />
                     </TableHead>
                   )}
-                  <TableHead>Name</TableHead>
+                  <TableHead>Employee</TableHead>
                   <TableHead>Code</TableHead>
                   <TableHead>Designation</TableHead>
                   <TableHead>Department</TableHead>
@@ -188,21 +188,26 @@ export function EmployeesTable() {
                       </TableCell>
                     )}
                     <TableCell>
-                      <Link href={`/employees/${employee.id}`} className="font-medium text-primary hover:underline">
-                        {employee.full_name}
+                      <Link href={`/employees/${employee.id}`} className="group flex items-center gap-3 font-semibold text-foreground hover:text-primary transition-colors">
+                        <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary border border-primary/20">
+                          {employee.full_name.charAt(0).toUpperCase()}
+                        </div>
+                        <span className="truncate group-hover:underline">{employee.full_name}</span>
                       </Link>
                     </TableCell>
                     <TableCell className="font-mono text-xs text-muted-foreground">
-                      {employee.employee_code}
+                      <span className="inline-flex rounded-md bg-muted px-2 py-0.5 font-mono text-[11px] font-semibold text-muted-foreground">
+                        {employee.employee_code}
+                      </span>
                     </TableCell>
-                    <TableCell>{employee.designation}</TableCell>
-                    <TableCell>{employee.department?.name ?? "—"}</TableCell>
-                    <TableCell>{employee.team?.name ?? "—"}</TableCell>
+                    <TableCell className="font-medium text-foreground">{employee.designation}</TableCell>
+                    <TableCell className="text-muted-foreground">{employee.department?.name ?? "—"}</TableCell>
+                    <TableCell className="text-muted-foreground">{employee.team?.name ?? "—"}</TableCell>
                     <TableCell>
                       <EmployeeStatusBadge status={employee.status} />
                     </TableCell>
                     {selectable && (
-                      <TableCell>
+                      <TableCell className="text-right">
                         <RowActions
                           viewHref={`/employees/${employee.id}`}
                           onEdit={canUpdate ? () => setStatusTarget([employee.id]) : undefined}

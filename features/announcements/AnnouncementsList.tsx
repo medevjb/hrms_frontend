@@ -81,7 +81,7 @@ export function AnnouncementsList({ mode }: { mode: "feed" | "manage" }) {
   if (mode === "feed") {
     return (
       <>
-        <div className="space-y-3">
+        <div className="space-y-3.5">
           {announcements.map((announcement) => {
             const unread = !announcement.my_read;
             const needsAck =
@@ -92,19 +92,19 @@ export function AnnouncementsList({ mode }: { mode: "feed" | "manage" }) {
                 key={announcement.id}
                 type="button"
                 onClick={() => setSelected(announcement)}
-                className="w-full rounded-xl border border-border bg-card p-4 text-left transition-colors hover:bg-accent/40"
+                className="w-full rounded-2xl border border-border/70 bg-card p-4 text-left shadow-xs transition-all hover:border-primary/40 hover:shadow-sm"
               >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="space-y-1">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="space-y-1.5">
                     <div className="flex items-center gap-2">
-                      <span className="font-medium">{announcement.title}</span>
-                      {unread && <span className="size-2 rounded-full bg-primary" aria-label="Unread" />}
+                      <span className="font-bold text-foreground text-base">{announcement.title}</span>
+                      {unread && <span className="size-2 rounded-full bg-primary animate-pulse" aria-label="Unread" />}
                     </div>
-                    <p className="line-clamp-2 text-sm text-muted-foreground">{announcement.content}</p>
+                    <p className="line-clamp-2 text-xs font-medium text-muted-foreground">{announcement.content}</p>
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-1.5">
-                    <StatusChip tone="info">{typeLabel(announcement.type)}</StatusChip>
-                    {needsAck && <StatusChip tone="warning">Acknowledge</StatusChip>}
+                    <StatusChip tone={announcement.type === "EMERGENCY" ? "danger" : "info"}>{typeLabel(announcement.type)}</StatusChip>
+                    {needsAck && <StatusChip tone="warning">Requires Acknowledgment</StatusChip>}
                   </div>
                 </div>
               </button>
@@ -118,7 +118,7 @@ export function AnnouncementsList({ mode }: { mode: "feed" | "manage" }) {
 
   return (
     <>
-    <div className="overflow-hidden rounded-xl border border-border">
+    <div className="overflow-hidden rounded-2xl border border-border/70 bg-card shadow-xs">
       <Table>
         <TableHeader>
           <TableRow>
@@ -126,16 +126,16 @@ export function AnnouncementsList({ mode }: { mode: "feed" | "manage" }) {
             <TableHead>Type</TableHead>
             <TableHead>Audience</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead>Read</TableHead>
-            <TableHead />
+            <TableHead>Read / Ack</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {announcements.map((announcement) => (
             <TableRow key={announcement.id}>
-              <TableCell className="font-medium">{announcement.title}</TableCell>
-              <TableCell>{typeLabel(announcement.type)}</TableCell>
-              <TableCell className="text-sm text-muted-foreground">
+              <TableCell className="font-bold text-foreground">{announcement.title}</TableCell>
+              <TableCell className="text-xs font-medium text-muted-foreground">{typeLabel(announcement.type)}</TableCell>
+              <TableCell className="text-xs font-medium text-muted-foreground">
                 {typeLabel(announcement.audience_type)}
               </TableCell>
               <TableCell>
@@ -143,14 +143,14 @@ export function AnnouncementsList({ mode }: { mode: "feed" | "manage" }) {
                   {typeLabel(announcement.status)}
                 </StatusChip>
               </TableCell>
-              <TableCell className="font-mono text-sm">
+              <TableCell className="font-mono text-xs font-semibold">
                 {announcement.status === "DRAFT"
                   ? "—"
                   : announcement.acknowledgement_required
                     ? `${announcement.acknowledged_count ?? 0} ack`
                     : `${announcement.read_count ?? 0}`}
               </TableCell>
-              <TableCell>
+              <TableCell className="text-right">
                 <div className="flex items-center justify-end gap-1">
                   {announcement.status === "DRAFT" && canPublish && (
                     <PublishButton announcement={announcement} />

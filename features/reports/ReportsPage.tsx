@@ -60,48 +60,50 @@ export function ReportsPage() {
         }
       />
 
-      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <FormField label="Report">
-          <Select value={type ?? ""} onValueChange={(v) => setType(v as ReportType)}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Choose a report" />
-            </SelectTrigger>
-            <SelectContent>
-              {(types ?? []).map((info) => (
-                <SelectItem key={info.type} value={info.type}>
-                  {info.title}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </FormField>
+      <div className="mb-6 rounded-2xl border border-border/70 bg-card p-4 shadow-xs">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <FormField label="Report Type">
+            <Select value={type ?? ""} onValueChange={(v) => setType(v as ReportType)}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Choose a report" />
+              </SelectTrigger>
+              <SelectContent>
+                {(types ?? []).map((info) => (
+                  <SelectItem key={info.type} value={info.type}>
+                    {info.title}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </FormField>
 
-        {!selectedInfo?.uses_payroll_period && (
-          <>
-            <FormField label="From">
-              <DatePicker value={dateFrom} onChange={setDateFrom} />
-            </FormField>
-            <FormField label="To">
-              <DatePicker value={dateTo} onChange={setDateTo} />
-            </FormField>
-          </>
-        )}
+          {!selectedInfo?.uses_payroll_period && (
+            <>
+              <FormField label="From Date">
+                <DatePicker value={dateFrom} onChange={setDateFrom} />
+              </FormField>
+              <FormField label="To Date">
+                <DatePicker value={dateTo} onChange={setDateTo} />
+              </FormField>
+            </>
+          )}
 
-        <FormField label="Department">
-          <Select value={departmentId || "all"} onValueChange={(v) => setDepartmentId(v === "all" ? "" : v)}>
-            <SelectTrigger className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All departments</SelectItem>
-              {(departments ?? []).map((department) => (
-                <SelectItem key={department.id} value={String(department.id)}>
-                  {department.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </FormField>
+          <FormField label="Department">
+            <Select value={departmentId || "all"} onValueChange={(v) => setDepartmentId(v === "all" ? "" : v)}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All departments</SelectItem>
+                {(departments ?? []).map((department) => (
+                  <SelectItem key={department.id} value={String(department.id)}>
+                    {department.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </FormField>
+        </div>
       </div>
 
       {!type ? (
@@ -112,11 +114,13 @@ export function ReportsPage() {
         <EmptyState title="No rows" description="No data matches the current filters." />
       ) : (
         <>
-          <p className="mb-2 text-sm text-muted-foreground">
-            {report.total} row{report.total === 1 ? "" : "s"}
-            {report.truncated ? ` · showing the first ${report.rows.length}, export for all` : ""}
-          </p>
-          <div className="overflow-x-auto rounded-xl border border-border">
+          <div className="mb-3 flex items-center justify-between">
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              {report.total} row{report.total === 1 ? "" : "s"}
+              {report.truncated ? ` · showing the first ${report.rows.length}, export for all` : ""}
+            </span>
+          </div>
+          <div className="overflow-x-auto rounded-2xl border border-border/70 bg-card shadow-xs">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -129,7 +133,7 @@ export function ReportsPage() {
                 {report.rows.map((row, index) => (
                   <TableRow key={index}>
                     {report.columns.map((column) => (
-                      <TableCell key={column.key} className="text-sm whitespace-nowrap">
+                      <TableCell key={column.key} className="text-sm font-medium whitespace-nowrap">
                         {row[column.key] ?? ""}
                       </TableCell>
                     ))}

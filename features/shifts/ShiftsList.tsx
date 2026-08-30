@@ -82,11 +82,11 @@ export function ShiftsList() {
           action={canManage ? { label: "Add shift", onClick: openCreate } : undefined}
         />
       ) : (
-        <div className="overflow-hidden rounded-xl border border-border">
+        <div className="overflow-hidden rounded-2xl border border-border/70 bg-card shadow-xs">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
+                <TableHead>Shift Name</TableHead>
                 <TableHead>Hours</TableHead>
                 <TableHead>Expected work</TableHead>
                 <TableHead>Late grace</TableHead>
@@ -97,17 +97,19 @@ export function ShiftsList() {
             <TableBody>
               {shifts.map((shift) => (
                 <TableRow key={shift.id}>
-                  <TableCell className="font-medium">{shift.name}</TableCell>
-                  <TableCell className="font-mono text-sm">
-                    {shift.start_time}–{shift.end_time}
+                  <TableCell className="font-bold text-foreground">{shift.name}</TableCell>
+                  <TableCell className="font-mono text-xs">
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-0.5 font-mono font-bold text-primary">
+                      {shift.start_time} – {shift.end_time}
+                    </span>
                     {shift.is_overnight && (
                       <Badge variant="secondary" className="ml-2 align-middle">
                         Overnight
                       </Badge>
                     )}
                   </TableCell>
-                  <TableCell className="font-mono text-sm">{shift.expected_work_minutes} min</TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
+                  <TableCell className="font-mono text-xs font-semibold text-muted-foreground">{shift.expected_work_minutes} min</TableCell>
+                  <TableCell className="text-xs font-medium text-muted-foreground">
                     {shift.late_grace_minutes === null
                       ? "Organization default"
                       : `${shift.late_grace_minutes} min`}
@@ -116,7 +118,7 @@ export function ShiftsList() {
                     <ShiftStatusSwitch shift={shift} disabled={!canManage} />
                   </TableCell>
                   {canManage && (
-                    <TableCell>
+                    <TableCell className="text-right">
                       <RowActions
                         onEdit={() => openEdit(shift)}
                         onDelete={() => setPendingDelete(shift)}

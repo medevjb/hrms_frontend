@@ -14,16 +14,18 @@ export function LeaveBalancesSummary() {
   }
 
   return (
-    <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+    <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
       {balances.map((balance, index) => (
         <StatTile
           key={balance.id}
           label={balance.leave_type.name}
-          value={balance.balance}
+          value={`${balance.balance} days`}
           icon={CalendarClockIcon}
           tone={TONES[index % TONES.length]}
+          subtext="Available balance"
         />
       ))}
     </div>
   );
 }
+
