@@ -1,7 +1,12 @@
 import { SparklesIcon } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { getBranding } from "@/lib/branding";
+import { proxyMedia } from "@/lib/media";
 
-export default function AuthLayout({ children }: { children: React.ReactNode }) {
+export default async function AuthLayout({ children }: { children: React.ReactNode }) {
+  const branding = await getBranding();
+  const logoUrl = proxyMedia(branding.logo_url);
+
   return (
     <div className="flex min-h-screen flex-1">
       {/* Brand panel — a calm, always-dark surface that carries the identity.
@@ -27,13 +32,20 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         />
 
         <div className="relative flex items-center gap-3">
-          <div className="flex size-11 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-indigo-400 shadow-lg shadow-primary/40">
-            <SparklesIcon className="size-6 text-white" />
-          </div>
+          {logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element -- small branded asset, no next/image config in this app
+            <img src={logoUrl} alt="" className="size-11 rounded-2xl bg-white/10 object-contain p-1" />
+          ) : (
+            <div className="flex size-11 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-indigo-400 shadow-lg shadow-primary/40">
+              <SparklesIcon className="size-6 text-white" />
+            </div>
+          )}
           <div>
-            <p className="font-heading text-lg font-extrabold tracking-tight text-white">Agency HRM</p>
+            <p className="font-heading text-lg font-extrabold tracking-tight text-white">
+              {branding.app_title}
+            </p>
             <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/45">
-              Enterprise Suite
+              {branding.company_name}
             </p>
           </div>
         </div>
@@ -49,7 +61,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         </div>
 
         <p className="relative text-xs text-white/35">
-          © {new Date().getFullYear()} Agency HRM · Enterprise Suite
+          © {new Date().getFullYear()} {branding.company_name}
         </p>
       </aside>
 
@@ -60,10 +72,17 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         </div>
 
         <div className="mb-9 flex items-center gap-2.5 lg:hidden">
-          <div className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-indigo-400">
-            <SparklesIcon className="size-5 text-white" />
-          </div>
-          <span className="font-heading text-base font-extrabold tracking-tight">Agency HRM</span>
+          {logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element -- small branded asset, no next/image config in this app
+            <img src={logoUrl} alt="" className="size-9 rounded-xl object-contain" />
+          ) : (
+            <div className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-indigo-400">
+              <SparklesIcon className="size-5 text-white" />
+            </div>
+          )}
+          <span className="font-heading text-base font-extrabold tracking-tight">
+            {branding.app_title}
+          </span>
         </div>
 
         <div className="w-full max-w-sm motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-500">

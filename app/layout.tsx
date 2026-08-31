@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans, IBM_Plex_Mono } from "next/font/google";
+import { getBranding } from "@/lib/branding";
+import { proxyMedia } from "@/lib/media";
 import { Providers } from "./providers";
 import "./globals.css";
 
@@ -15,10 +17,19 @@ const mono = IBM_Plex_Mono({
   weight: ["400", "500", "600"],
 });
 
-export const metadata: Metadata = {
-  title: "Agency HRM",
-  description: "Agency Human Resource Management System",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const branding = await getBranding();
+  const favicon = proxyMedia(branding.favicon_url);
+
+  return {
+    title: {
+      default: branding.app_title,
+      template: `%s · ${branding.app_title}`,
+    },
+    description: `${branding.company_name} — Human Resource Management`,
+    ...(favicon ? { icons: { icon: favicon } } : {}),
+  };
+}
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (

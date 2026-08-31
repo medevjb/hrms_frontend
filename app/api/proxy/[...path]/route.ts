@@ -20,13 +20,24 @@ async function proxy(
 
   const url = `${API_URL}/${path.join("/")}${request.nextUrl.search}`;
   const hasBody = !["GET", "HEAD"].includes(request.method);
-  const body = hasBody ? await request.text() : undefined;
+
+  // A file upload (logo, favicon, avatar, document) comes in as
+  // multipart/form-data — forward the raw bytes and the original
+  // Content-Type so its boundary survives. Everything else is JSON.
+  const incomingType = request.headers.get("Content-Type") ?? "";
+  const isBinaryBody = hasBody && !incomingType.includes("application/json");
+  const body = hasBody
+    ? isBinaryBody
+      ? await request.arrayBuffer()
+      : await request.text()
+    : undefined;
 
   const response = await fetch(url, {
     method: request.method,
     headers: {
       Accept: "application/json",
-      ...(body ? { "Content-Type": "application/json" } : {}),
+      ...(hasBody && isBinaryBody && incomingType ? { "Content-Type": incomingType } : {}),
+      ...(hasBody && !isBinaryBody && body ? { "Content-Type": "application/json" } : {}),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
     body,
@@ -39,11 +50,14 @@ async function proxy(
   const contentType = response.headers.get("Content-Type") ?? "application/json";
 
   // Authorized file streams (docs/PRD.md §82 — holiday notice / payslip
-  // PDFs) are binary; decoding them as text would corrupt the bytes.
+  // PDFs, branding images) are binary; decoding them as text would
+  // corrupt the bytes.
   if (!contentType.includes("application/json")) {
     const headers = new Headers({ "Content-Type": contentType });
     const disposition = response.headers.get("Content-Disposition");
     if (disposition) headers.set("Content-Disposition", disposition);
+    const cacheControl = response.headers.get("Cache-Control");
+    if (cacheControl) headers.set("Cache-Control", cacheControl);
 
     return new NextResponse(await response.arrayBuffer(), {
       status: response.status,
