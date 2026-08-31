@@ -7,7 +7,6 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { FormField } from "@/components/ui/form-field";
 import { PageLoadingSkeleton } from "@/components/ui/PageLoadingSkeleton";
 import { PasswordInput } from "@/components/ui/password-input";
@@ -25,30 +24,28 @@ const schema = z
     path: ["password_confirmation"],
   });
 
-function TwoFactorCard({ enabled }: { enabled: boolean }) {
+function TwoFactorRow({ enabled }: { enabled: boolean }) {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-sm font-semibold">
-          {enabled ? (
-            <ShieldCheckIcon className="size-4 text-emerald-600 dark:text-emerald-400" />
-          ) : (
-            <ShieldIcon className="size-4 text-muted-foreground" />
-          )}
-          Two-factor authentication
-        </CardTitle>
-        <CardDescription>
-          {enabled
-            ? "On — you're asked for a code from your authenticator app when you sign in."
-            : "Off — sign-in only asks for your password."}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
+    <div className="flex items-start justify-between gap-4 rounded-xl border border-border/70 bg-muted/30 p-4">
+      <div className="space-y-0.5">
+        <p className="text-sm font-semibold text-foreground">Two-factor authentication</p>
         <p className="text-xs text-muted-foreground">
-          Two-factor enrolment is handled during sign-in. Contact your HR team if you need to reset it.
+          {enabled
+            ? "You're asked for a code from your authenticator app when you sign in. Contact HR to reset it."
+            : "Sign-in only asks for your password. Enrolment is handled during sign-in."}
         </p>
-      </CardContent>
-    </Card>
+      </div>
+      <span
+        className={
+          enabled
+            ? "inline-flex shrink-0 items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400"
+            : "inline-flex shrink-0 items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground"
+        }
+      >
+        {enabled ? <ShieldCheckIcon className="size-3.5" /> : <ShieldIcon className="size-3.5" />}
+        {enabled ? "On" : "Off"}
+      </span>
+    </div>
   );
 }
 
@@ -99,59 +96,60 @@ function PasswordForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <Alert>
-        <ShieldCheckIcon />
-        <AlertDescription>
-          Changing your password signs you out on every device. You&apos;ll sign in again with the
-          new one.
-        </AlertDescription>
-      </Alert>
+    <div className="space-y-3 border-t border-border pt-6">
+      <div className="space-y-0.5">
+        <h3 className="font-heading text-sm font-bold text-foreground">Password</h3>
+        <p className="text-xs text-muted-foreground">
+          Changing it signs you out on every device — you&apos;ll sign in again with the new one.
+        </p>
+      </div>
 
-      {error && (
-        <Alert variant="destructive">
-          <AlertCircleIcon />
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
+      <form onSubmit={handleSubmit} className="space-y-5 pt-1">
+        {error && (
+          <Alert variant="destructive">
+            <AlertCircleIcon />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
 
-      <FormField
-        label="Current password"
-        htmlFor="current_password"
-        error={fieldErrors.current_password}
-      >
-        <PasswordInput
-          id="current_password"
-          autoComplete="current-password"
-          value={currentPassword}
-          onChange={(e) => setCurrentPassword(e.target.value)}
-        />
-      </FormField>
-      <FormField label="New password" htmlFor="new_password" error={fieldErrors.password}>
-        <PasswordInput
-          id="new_password"
-          autoComplete="new-password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-      </FormField>
-      <FormField
-        label="Confirm new password"
-        htmlFor="new_password_confirmation"
-        error={fieldErrors.password_confirmation}
-      >
-        <PasswordInput
-          id="new_password_confirmation"
-          autoComplete="new-password"
-          value={passwordConfirmation}
-          onChange={(e) => setPasswordConfirmation(e.target.value)}
-        />
-      </FormField>
+        <FormField
+          label="Current password"
+          htmlFor="current_password"
+          error={fieldErrors.current_password}
+        >
+          <PasswordInput
+            id="current_password"
+            autoComplete="current-password"
+            value={currentPassword}
+            onChange={(e) => setCurrentPassword(e.target.value)}
+          />
+        </FormField>
+        <FormField label="New password" htmlFor="new_password" error={fieldErrors.password}>
+          <PasswordInput
+            id="new_password"
+            autoComplete="new-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+        </FormField>
+        <FormField
+          label="Confirm new password"
+          htmlFor="new_password_confirmation"
+          error={fieldErrors.password_confirmation}
+        >
+          <PasswordInput
+            id="new_password_confirmation"
+            autoComplete="new-password"
+            value={passwordConfirmation}
+            onChange={(e) => setPasswordConfirmation(e.target.value)}
+          />
+        </FormField>
 
-      <Button type="submit" disabled={change.isPending}>
-        {change.isPending ? "Updating…" : "Change password"}
-      </Button>
-    </form>
+        <Button type="submit" disabled={change.isPending}>
+          {change.isPending ? "Updating…" : "Change password"}
+        </Button>
+      </form>
+    </div>
   );
 }
 
@@ -162,7 +160,7 @@ export function SecuritySection() {
 
   return (
     <div className="space-y-6">
-      <TwoFactorCard enabled={data.two_factor_enabled} />
+      <TwoFactorRow enabled={data.two_factor_enabled} />
       <PasswordForm />
     </div>
   );

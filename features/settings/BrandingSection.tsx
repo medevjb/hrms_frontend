@@ -123,7 +123,7 @@ function Form({ initial }: { initial: Branding }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
+    <form onSubmit={handleSubmit} className="space-y-4">
       <FormStatus error={error} saved={saved} />
 
       <FormField label="Company name" htmlFor="brand_company">

@@ -44,7 +44,7 @@ function Form({ initial }: { initial: AttendanceSettings }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-lg space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4">
       {error && (
         <Alert variant="destructive">
           <AlertCircleIcon />

@@ -44,9 +44,11 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
             <p className="font-heading text-lg font-extrabold tracking-tight text-white">
               {branding.app_title}
             </p>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/45">
-              {branding.company_name}
-            </p>
+            {branding.company_name !== branding.app_title && (
+              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/45">
+                {branding.company_name}
+              </p>
+            )}
           </div>
         </div>
 

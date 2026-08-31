@@ -129,9 +129,11 @@ export function AppSidebar() {
             <span className="font-heading text-base font-extrabold tracking-tight text-sidebar-foreground">
               {appTitle}
             </span>
-            <span className="text-[10px] font-semibold text-primary uppercase tracking-wider">
-              {user.organization.name}
-            </span>
+            {user.organization.name !== appTitle && (
+              <span className="text-[10px] font-semibold text-primary uppercase tracking-wider">
+                {user.organization.name}
+              </span>
+            )}
           </div>
         </Link>
       </SidebarHeader>

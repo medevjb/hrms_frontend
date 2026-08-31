@@ -7,7 +7,6 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { FormField } from "@/components/ui/form-field";
 import { FormStatus } from "@/components/ui/FormStatus";
 import { Input } from "@/components/ui/input";
@@ -179,11 +178,12 @@ function Form({ profile }: { profile: Profile }) {
   const emp = profile.employee;
 
   return (
-    <div className="space-y-6">
-      <PhotoField profile={profile} />
+    <div className="space-y-8">
+      <div className="space-y-6">
+        <PhotoField profile={profile} />
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <FormStatus error={error} saved={saved} savedText="Profile saved." />
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <FormStatus error={error} saved={saved} savedText="Profile saved." />
 
         <FormField label="Full name" htmlFor="profile_name" error={fieldErrors.name}>
           <Input id="profile_name" value={name} onChange={(e) => setName(e.target.value)} />
@@ -238,35 +238,36 @@ function Form({ profile }: { profile: Profile }) {
           </>
         )}
 
-        <Button type="submit" disabled={update.isPending}>
-          {update.isPending ? "Saving…" : "Save changes"}
-        </Button>
-      </form>
+          <Button type="submit" disabled={update.isPending}>
+            {update.isPending ? "Saving…" : "Save changes"}
+          </Button>
+        </form>
+      </div>
 
       {emp && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm font-semibold">Employment</CardTitle>
-            <CardDescription>Managed by your HR team.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <dl className="divide-y divide-border/60">
-              <Fact label="Employee code">{emp.employee_code}</Fact>
-              <Fact label="Designation">{emp.designation}</Fact>
-              <Fact label="Employment type">{humanize(emp.employment_type)}</Fact>
-              <Fact label="Status">{humanize(emp.status)}</Fact>
-              <Fact label="Department">{emp.department?.name}</Fact>
-              <Fact label="Team">{emp.team?.name}</Fact>
-              <Fact label="Reporting to">{emp.team_leader?.full_name}</Fact>
-              <Fact label="Shift">{emp.current_shift?.name}</Fact>
-              <Fact label="Weekly off">{emp.weekend_day ? humanize(emp.weekend_day) : "Organization default"}</Fact>
-              <Fact label="Joining date">{emp.joining_date}</Fact>
-              {emp.confirmation_date && (
-                <Fact label="Confirmation date">{emp.confirmation_date}</Fact>
-              )}
-            </dl>
-          </CardContent>
-        </Card>
+        <div className="space-y-3 border-t border-border pt-6">
+          <div className="space-y-0.5">
+            <h3 className="font-heading text-sm font-bold text-foreground">Employment</h3>
+            <p className="text-xs text-muted-foreground">Managed by your HR team.</p>
+          </div>
+          <dl className="divide-y divide-border/60">
+            <Fact label="Employee code">{emp.employee_code}</Fact>
+            <Fact label="Designation">{emp.designation}</Fact>
+            <Fact label="Employment type">{humanize(emp.employment_type)}</Fact>
+            <Fact label="Status">{humanize(emp.status)}</Fact>
+            <Fact label="Department">{emp.department?.name}</Fact>
+            <Fact label="Team">{emp.team?.name}</Fact>
+            <Fact label="Reporting to">{emp.team_leader?.full_name}</Fact>
+            <Fact label="Shift">{emp.current_shift?.name}</Fact>
+            <Fact label="Weekly off">
+              {emp.weekend_day ? humanize(emp.weekend_day) : "Organization default"}
+            </Fact>
+            <Fact label="Joining date">{emp.joining_date}</Fact>
+            {emp.confirmation_date && (
+              <Fact label="Confirmation date">{emp.confirmation_date}</Fact>
+            )}
+          </dl>
+        </div>
       )}
     </div>
   );

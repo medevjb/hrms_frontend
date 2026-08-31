@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PageLoadingSkeleton } from "@/components/ui/PageLoadingSkeleton";
+import { SettingsCard } from "@/components/ui/SettingsCard";
 import {
   Select,
   SelectContent,
@@ -49,7 +50,7 @@ function RowDaySelect({ employee }: { employee: Employee }) {
       }}
       disabled={update.isPending}
     >
-      <SelectTrigger className="h-8 w-40">
+      <SelectTrigger className="h-8 w-48">
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
@@ -110,13 +111,12 @@ export function WeeklyOffsSection() {
   const orgDefault = orgSettings?.default_weekend_day;
 
   return (
-    <div className="space-y-4">
+    <SettingsCard contentClassName="space-y-4 pt-1">
       <p className="text-sm text-muted-foreground">
         Everyone starts on the organization default
         {orgDefault ? ` (${titleCase(orgDefault)})` : ""}. Override it for anyone who works a
-        different rest day — a client-aligned team, say.
+        different rest day.
       </p>
-
       <div className="flex flex-wrap gap-2">
         <input
           type="text"
@@ -220,6 +220,6 @@ export function WeeklyOffsSection() {
           </Table>
         </div>
       )}
-    </div>
+    </SettingsCard>
   );
 }
