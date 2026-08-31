@@ -3,8 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronDownIcon, LogOutIcon, SettingsIcon, ShieldCheckIcon } from "lucide-react";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { ChevronDownIcon, LogOutIcon, SettingsIcon, ShieldCheckIcon, UserIcon } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useCurrentUser } from "@/features/auth/CurrentUserContext";
+import { photoSrc } from "@/lib/photo";
 
 export function UserMenu() {
   const user = useCurrentUser();
@@ -33,6 +34,7 @@ export function UserMenu() {
     <DropdownMenu>
       <DropdownMenuTrigger className="group flex items-center gap-2.5 rounded-full border border-border/60 bg-card px-2.5 py-1 text-sm outline-none transition-colors hover:border-border hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring">
         <Avatar className="size-7.5 border border-primary/20">
+          <AvatarImage src={photoSrc(user.photo_url)} alt={user.name} />
           <AvatarFallback className="bg-primary/10 text-xs font-bold text-primary">
             {user.name.charAt(0).toUpperCase()}
           </AvatarFallback>
@@ -57,6 +59,12 @@ export function UserMenu() {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
+        <DropdownMenuItem asChild className="rounded-lg cursor-pointer">
+          <Link href="/profile">
+            <UserIcon className="size-4 mr-2" />
+            <span>Profile</span>
+          </Link>
+        </DropdownMenuItem>
         <DropdownMenuItem asChild className="rounded-lg cursor-pointer">
           <Link href="/settings">
             <SettingsIcon className="size-4 mr-2" />

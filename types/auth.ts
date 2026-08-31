@@ -67,6 +67,7 @@ export type CurrentUser = {
   name: string;
   email: string;
   two_factor_enabled: boolean;
+  photo_url: string | null;
   roles: string[];
   permissions: PermissionName[];
   // §142 — organization timezone is authoritative for display everywhere,

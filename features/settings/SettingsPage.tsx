@@ -11,7 +11,6 @@ import { OrganizationSettingsTab } from "./OrganizationSettingsTab";
 import { OvertimeSettingsTab } from "./OvertimeSettingsTab";
 import { PasswordTab } from "./PasswordTab";
 import { PayrollSettingsTab } from "./PayrollSettingsTab";
-import { ProfileTab } from "./ProfileTab";
 
 type SettingsTab = {
   value: string;
@@ -21,7 +20,6 @@ type SettingsTab = {
 };
 
 const TABS: SettingsTab[] = [
-  { value: "profile", label: "Profile", render: () => <ProfileTab /> },
   { value: "password", label: "Password", render: () => <PasswordTab /> },
   {
     value: "organization",
@@ -58,7 +56,7 @@ const TABS: SettingsTab[] = [
 export function SettingsPage() {
   const user = useCurrentUser();
   const tabs = TABS.filter((tab) => !tab.permissions || canAny(user.permissions, tab.permissions));
-  const hasOrgSettings = tabs.length > 2;
+  const hasOrgSettings = tabs.length > 1;
 
   return (
     <>
@@ -66,12 +64,12 @@ export function SettingsPage() {
         title="Settings"
         description={
           hasOrgSettings
-            ? "Your profile and password, plus the organization-wide configuration you manage."
-            : "Your profile and password."
+            ? "Your password, plus the organization-wide configuration you manage."
+            : "Change your password."
         }
       />
 
-      <Tabs defaultValue="profile">
+      <Tabs defaultValue="password">
         <TabsList className="max-w-full overflow-x-auto [&::-webkit-scrollbar]:hidden">
           {tabs.map((tab) => (
             <TabsTrigger key={tab.value} value={tab.value}>

@@ -25,6 +25,7 @@ export type Employee = {
   full_name: string;
   email: string;
   profile_image_path: string | null;
+  photo_url: string | null;
   phone: string | null;
   address: string | null;
   emergency_contact_name: string | null;
