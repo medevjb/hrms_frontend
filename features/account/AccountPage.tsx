@@ -15,7 +15,7 @@ import { PageLoadingSkeleton } from "@/components/ui/PageLoadingSkeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EmployeeStatusBadge } from "@/features/employees/EmployeeStatusBadge";
 import { ApiError } from "@/lib/api-error";
-import { fmtDate, getInitials, humanize, tenure } from "@/lib/people";
+import { fmtDate, getInitials, humanize, tenureDetail } from "@/lib/people";
 import { proxyMedia } from "@/lib/media";
 import {
   useDeleteProfilePhoto,
@@ -24,6 +24,7 @@ import {
   useUpdateProfilePhoto,
 } from "@/services/profile";
 import type { Profile } from "@/types/profile";
+import { MyDocumentsTab } from "./MyDocumentsTab";
 import { SecuritySection } from "./SecuritySection";
 
 function RailAvatar({ profile }: { profile: Profile }) {
@@ -127,6 +128,19 @@ function RailAvatar({ profile }: { profile: Profile }) {
   );
 }
 
+function TenureStat({ value, unit }: { value: number; unit: string }) {
+  return (
+    <div className="rounded-lg bg-muted/50 px-1 py-2 text-center">
+      <p className="font-mono text-xl font-bold leading-none tracking-tight text-foreground">
+        {value}
+      </p>
+      <p className="mt-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+        {unit}
+      </p>
+    </div>
+  );
+}
+
 function IdentityRail({ profile }: { profile: Profile }) {
   const [copied, setCopied] = useState<string | null>(null);
   const emp = profile.employee;
@@ -140,7 +154,7 @@ function IdentityRail({ profile }: { profile: Profile }) {
 
   const orgPath =
     [emp?.department?.name, emp?.team?.name].filter(Boolean).join("  ›  ") || "Unassigned";
-  const service = emp ? tenure(emp.joining_date) : null;
+  const service = emp ? tenureDetail(emp.joining_date) : null;
 
   return (
     <aside className="motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-500 lg:sticky lg:top-24">
@@ -161,11 +175,15 @@ function IdentityRail({ profile }: { profile: Profile }) {
 
         {service && (
           <div className="mt-6 border-t border-border/60 pt-5">
-            <RailLabel>Tenure</RailLabel>
-            <p className="mt-1 font-mono text-2xl font-bold tracking-tight text-foreground">
-              {service.headline}
+            <RailLabel>Time with the company</RailLabel>
+            <div className="mt-2 grid grid-cols-3 gap-2">
+              <TenureStat value={service.years} unit={service.years === 1 ? "year" : "years"} />
+              <TenureStat value={service.months} unit={service.months === 1 ? "month" : "months"} />
+              <TenureStat value={service.days} unit={service.days === 1 ? "day" : "days"} />
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">
+              {service.totalDays.toLocaleString()} days total · since {service.since}
             </p>
-            <p className="mt-0.5 text-xs text-muted-foreground">{service.caption}</p>
           </div>
         )}
 
@@ -419,6 +437,7 @@ function Content({ profile }: { profile: Profile }) {
             <TabsTrigger value="profile">Profile</TabsTrigger>
             {emp && <TabsTrigger value="emergency">Emergency contact</TabsTrigger>}
             {emp && <TabsTrigger value="employment">Employment</TabsTrigger>}
+            {emp && <TabsTrigger value="documents">Documents</TabsTrigger>}
             <TabsTrigger value="security">Security</TabsTrigger>
           </TabsList>
 
@@ -459,6 +478,22 @@ function Content({ profile }: { profile: Profile }) {
                 </CardHeader>
                 <CardContent>
                   <EmploymentFacts profile={profile} />
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
+
+          {emp && (
+            <TabsContent value="documents" className="pt-6">
+              <Card className="max-w-2xl">
+                <CardHeader>
+                  <CardTitle className="text-sm font-semibold">Documents</CardTitle>
+                  <CardDescription>
+                    Files your HR team has filed for you. Open one to read it, or download a copy.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <MyDocumentsTab employeeId={emp.id} />
                 </CardContent>
               </Card>
             </TabsContent>

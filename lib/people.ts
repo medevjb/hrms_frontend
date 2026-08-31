@@ -1,4 +1,11 @@
-import { differenceInCalendarMonths, format, isValid, parseISO } from "date-fns";
+import {
+  differenceInCalendarDays,
+  differenceInCalendarMonths,
+  format,
+  intervalToDuration,
+  isValid,
+  parseISO,
+} from "date-fns";
 
 /** "NOTICE_PERIOD" → "Notice period" */
 export function humanize(value: string): string {
@@ -33,4 +40,34 @@ export function tenure(joiningDate: string): { headline: string; caption: string
   else if (years >= 1) headline = `${years} yr ${rest} mo`;
 
   return { headline, caption: `Joined ${format(start, "MMM yyyy")}` };
+}
+
+/**
+ * A full years / months / days breakdown of length of service, plus the
+ * running day count — "how long have I worked here" spelled out.
+ */
+export function tenureDetail(joiningDate: string): {
+  years: number;
+  months: number;
+  days: number;
+  totalDays: number;
+  since: string;
+} | null {
+  const start = parseISO(joiningDate);
+  if (!isValid(start)) return null;
+
+  const now = new Date();
+  if (start > now) {
+    return { years: 0, months: 0, days: 0, totalDays: 0, since: format(start, "d MMM yyyy") };
+  }
+
+  const duration = intervalToDuration({ start, end: now });
+
+  return {
+    years: duration.years ?? 0,
+    months: duration.months ?? 0,
+    days: duration.days ?? 0,
+    totalDays: Math.max(0, differenceInCalendarDays(now, start)),
+    since: format(start, "d MMM yyyy"),
+  };
 }

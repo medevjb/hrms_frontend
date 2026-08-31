@@ -10,6 +10,7 @@ export type Profile = {
   two_factor_enabled: boolean;
   photo_url: string | null;
   employee: {
+    id: number;
     first_name: string;
     last_name: string;
     full_name: string;
