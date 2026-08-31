@@ -5,64 +5,50 @@ import { useSyncExternalStore } from "react";
 import { MoonIcon, SunIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const noop = () => () => {};
+const subscribe = () => () => {};
 
+/**
+ * A single icon button that flips between light and dark. The sun and moon
+ * cross-fade with a quarter-turn so the switch reads as one motion. Server
+ * renders the empty frame (theme unknown) and the client fills in the icon
+ * on first paint — no hydration mismatch, no setState in an effect.
+ */
 export function ThemeToggle({ className }: { className?: string }) {
-  const { theme, setTheme } = useTheme();
-  // Server renders the placeholder, the client swaps in the real control on
-  // first paint — avoids a hydration mismatch on the theme-dependent classes
-  // without a setState-in-effect.
+  const { resolvedTheme, setTheme } = useTheme();
   const mounted = useSyncExternalStore(
-    noop,
+    subscribe,
     () => true,
     () => false,
   );
 
-  if (!mounted) {
-    return (
-      <div className={cn("inline-flex items-center rounded-full bg-muted/60 p-1 text-xs", className)}>
-        <div className="size-6 rounded-full bg-background/80 shadow-xs" />
-      </div>
-    );
-  }
-
-  const isDark = theme === "dark";
+  const isDark = mounted && resolvedTheme === "dark";
 
   return (
-    <div
+    <button
+      type="button"
+      onClick={() => setTheme(isDark ? "light" : "dark")}
+      disabled={!mounted}
+      aria-label={isDark ? "Switch to light theme" : "Switch to dark theme"}
+      title={isDark ? "Switch to light theme" : "Switch to dark theme"}
       className={cn(
-        "inline-flex items-center gap-0.5 rounded-full border border-border/60 bg-muted/70 p-1 text-xs transition-colors",
-        className
+        "relative inline-flex size-9 items-center justify-center rounded-full border border-border/60 bg-card text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+        className,
       )}
-      role="radiogroup"
-      aria-label="Theme switcher"
     >
-      <button
-        type="button"
-        onClick={() => setTheme("light")}
+      <SunIcon
         className={cn(
-          "flex items-center gap-1.5 rounded-full px-2.5 py-1 font-medium transition-all duration-200",
-          !isDark
-            ? "bg-card text-foreground shadow-xs font-semibold"
-            : "text-muted-foreground hover:text-foreground"
+          "absolute size-[1.05rem] transition-all duration-300",
+          mounted && !isDark
+            ? "rotate-0 scale-100 opacity-100"
+            : "-rotate-90 scale-0 opacity-0",
         )}
-      >
-        <SunIcon className="size-3.5 text-amber-500" />
-        <span>Light</span>
-      </button>
-      <button
-        type="button"
-        onClick={() => setTheme("dark")}
+      />
+      <MoonIcon
         className={cn(
-          "flex items-center gap-1.5 rounded-full px-2.5 py-1 font-medium transition-all duration-200",
-          isDark
-            ? "bg-card text-foreground shadow-xs font-semibold"
-            : "text-muted-foreground hover:text-foreground"
+          "absolute size-[1.05rem] transition-all duration-300",
+          isDark ? "rotate-0 scale-100 opacity-100" : "rotate-90 scale-0 opacity-0",
         )}
-      >
-        <MoonIcon className="size-3.5 text-indigo-400" />
-        <span>Dark</span>
-      </button>
-    </div>
+      />
+    </button>
   );
 }

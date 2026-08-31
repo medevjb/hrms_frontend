@@ -31,7 +31,6 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { useCurrentUser } from "@/features/auth/CurrentUserContext";
-import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { canAny } from "@/lib/permissions";
 import { permissionsForPath } from "@/lib/nav-permissions";
 
@@ -161,16 +160,13 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="p-3 border-t border-sidebar-border group-data-[collapsible=icon]:hidden">
-        <div className="flex flex-col gap-2">
-          <ThemeToggle className="w-full justify-center bg-sidebar-accent/50" />
-          <div className="flex items-center gap-2.5 rounded-xl border border-sidebar-border bg-sidebar-accent/30 p-2.5">
-            <div className="flex size-7.5 items-center justify-center rounded-lg bg-primary/10 text-xs font-bold text-primary">
-              {user.name.charAt(0).toUpperCase()}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="truncate text-xs font-semibold text-sidebar-foreground">{user.name}</p>
-              <p className="truncate text-[10px] text-muted-foreground">{user.email}</p>
-            </div>
+        <div className="flex items-center gap-2.5 rounded-xl border border-sidebar-border bg-sidebar-accent/30 p-2.5">
+          <div className="flex size-7.5 items-center justify-center rounded-lg bg-primary/10 text-xs font-bold text-primary">
+            {user.name.charAt(0).toUpperCase()}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="truncate text-xs font-semibold text-sidebar-foreground">{user.name}</p>
+            <p className="truncate text-[10px] text-muted-foreground">{user.email}</p>
           </div>
         </div>
       </SidebarFooter>

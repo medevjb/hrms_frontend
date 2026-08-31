@@ -27,8 +27,8 @@ export function AppShellLayout({ children }: { children: React.ReactNode }) {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <ThemeToggle className="hidden sm:inline-flex" />
+          <div className="flex items-center gap-2.5">
+            <ThemeToggle />
             <UserMenu />
           </div>
         </header>
