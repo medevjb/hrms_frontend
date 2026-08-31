@@ -1,5 +1,7 @@
 import { SearchIcon } from "lucide-react";
 import { AppSidebar } from "@/components/layouts/AppSidebar";
+import { HeaderLiveDateTime } from "@/components/layouts/HeaderLiveDateTime";
+import { HeaderNotifications } from "@/components/layouts/HeaderNotifications";
 import { RouteGuard } from "@/components/layouts/RouteGuard";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
@@ -27,7 +29,9 @@ export function AppShellLayout({ children }: { children: React.ReactNode }) {
             </div>
           </div>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-3">
+            <HeaderLiveDateTime />
+            <HeaderNotifications />
             <ThemeToggle />
             <UserMenu />
           </div>
