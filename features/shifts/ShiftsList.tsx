@@ -88,6 +88,7 @@ export function ShiftsList() {
               <TableRow>
                 <TableHead>Shift Name</TableHead>
                 <TableHead>Hours</TableHead>
+                <TableHead>Break</TableHead>
                 <TableHead>Expected work</TableHead>
                 <TableHead>Late grace</TableHead>
                 <TableHead>Active</TableHead>
@@ -107,6 +108,13 @@ export function ShiftsList() {
                         Overnight
                       </Badge>
                     )}
+                  </TableCell>
+                  <TableCell className="font-mono text-xs text-muted-foreground">
+                    {shift.break_start && shift.break_end
+                      ? `${shift.break_start}–${shift.break_end}`
+                      : shift.break_minutes > 0
+                        ? `${shift.break_minutes} min`
+                        : "—"}
                   </TableCell>
                   <TableCell className="font-mono text-xs font-semibold text-muted-foreground">{shift.expected_work_minutes} min</TableCell>
                   <TableCell className="text-xs font-medium text-muted-foreground">

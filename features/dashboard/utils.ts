@@ -16,200 +16,201 @@ import {
 import type { CalendarDayItem, CalendarDayStatus } from "./mockData";
 
 /**
- * Calculates length of service string from joining date (e.g. "10 months 26 days" or "1 year 4 months")
+ * Length of service from a joining date, e.g. "1 year 4 months" or
+ * "10 months 26 days". Returns null when there's no usable date so the
+ * caller can render its own empty state rather than a fabricated span.
  */
-export function calculateLengthOfService(joiningDateStr?: string | null): string {
-  if (!joiningDateStr) return "10 months 26 days";
-  try {
-    const joining = parseISO(joiningDateStr);
-    if (!isValid(joining)) return "10 months 26 days";
+export function calculateLengthOfService(joiningDateStr?: string | null): string | null {
+  if (!joiningDateStr) return null;
 
-    const now = new Date();
-    if (joining > now) return "Newly Joined";
+  const joining = parseISO(joiningDateStr);
+  if (!isValid(joining)) return null;
 
-    const years = differenceInYears(now, joining);
-    const months = differenceInMonths(now, joining) % 12;
-    const days = Math.floor(differenceInDays(now, joining) % 30.4375);
+  const now = new Date();
+  if (joining > now) return "Newly joined";
 
-    const parts: string[] = [];
-    if (years > 0) parts.push(`${years} ${years === 1 ? "year" : "years"}`);
-    if (months > 0) parts.push(`${months} ${months === 1 ? "month" : "months"}`);
-    if (days > 0 || parts.length === 0) parts.push(`${days} ${days === 1 ? "day" : "days"}`);
+  const years = differenceInYears(now, joining);
+  const months = differenceInMonths(now, joining) % 12;
+  const days = Math.floor(differenceInDays(now, joining) % 30.4375);
 
-    return parts.join(" ");
-  } catch {
-    return "10 months 26 days";
+  const parts: string[] = [];
+  if (years > 0) parts.push(`${years} ${years === 1 ? "year" : "years"}`);
+  if (months > 0) parts.push(`${months} ${months === 1 ? "month" : "months"}`);
+  if (days > 0 || parts.length === 0) parts.push(`${days} ${days === 1 ? "day" : "days"}`);
+
+  return parts.join(" ");
+}
+
+/** A day's attendance record as the calendar needs it — times pre-formatted
+ *  for display by the caller (the generator does no timezone work). */
+export type CalendarRecord = {
+  work_date: string;
+  status: string;
+  check_in: string | null;
+  check_out: string | null;
+  worked_hours: string | null;
+  late_minutes: number | null;
+  shift_name: string | null;
+};
+
+const STATUS_MAP: Record<string, CalendarDayStatus> = {
+  PRESENT: "PRESENT",
+  LATE: "LATE",
+  ABSENT: "ABSENT",
+  ON_LEAVE: "LEAVE",
+  HALF_DAY: "HALF_DAY",
+  WEEKEND: "OFF",
+  HOLIDAY: "HOLIDAY",
+  MISSING_CHECKOUT: "PRESENT",
+};
+
+function labelFor(status: CalendarDayStatus): string | undefined {
+  switch (status) {
+    case "PRESENT":
+      return "Present";
+    case "LATE":
+      return "Late";
+    case "ABSENT":
+      return "Absent";
+    case "LEAVE":
+      return "Leave";
+    case "HALF_DAY":
+      return "Half day";
+    case "HOLIDAY":
+      return "Holiday";
+    case "OFF":
+      return "(Off)";
+    default:
+      return undefined;
   }
 }
 
 /**
- * Generates the full month calendar grid with realistic attendance statuses matching
- * the reference image (and works dynamically for any chosen month).
+ * Builds the month grid from real attendance records and holidays only.
+ * A past work day with no record is `NO_RECORD` (never an invented Present
+ * or Absent); future days are `FUTURE`; weekends with no record fall back
+ * to `OFF`. Stats are counted from what's actually there.
  */
+const WEEKDAY_NAMES = [
+  "sunday",
+  "monday",
+  "tuesday",
+  "wednesday",
+  "thursday",
+  "friday",
+  "saturday",
+];
+
 export function generateMonthCalendarDays(
   currentDate: Date,
-  backendRecords?: Array<{
-    work_date: string;
-    status: string;
-    check_in: string | null;
-    check_out: string | null;
-    worked_minutes: number | null;
-    late_minutes: number | null;
-    shift?: { name: string } | null;
-  }>,
-  holidays?: Array<{ date: string; title: string }>
+  records?: CalendarRecord[],
+  holidays?: Array<{ date: string; title: string }>,
+  weekendDays?: string[],
+  joiningDate?: string | null,
 ): {
   days: CalendarDayItem[];
   stats: {
     workingDays: number;
     present: number;
     late: number;
-    movement: number;
     leave: number;
     absent: number;
     holiday: number;
     off: number;
+    noRecord: number;
   };
 } {
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
-  const calendarStart = startOfWeek(monthStart, { weekStartsOn: 0 }); // Sunday
+  const calendarStart = startOfWeek(monthStart, { weekStartsOn: 0 });
   const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 0 });
 
   const allDates = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
-  const backendMap = new Map<string, NonNullable<typeof backendRecords>[number]>();
-  if (backendRecords) {
-    for (const r of backendRecords) {
-      backendMap.set(r.work_date, r);
-    }
+
+  const recordMap = new Map<string, CalendarRecord>();
+  for (const record of records ?? []) {
+    recordMap.set(record.work_date, record);
   }
 
   const holidayMap = new Map<string, string>();
-  if (holidays) {
-    for (const h of holidays) {
-      holidayMap.set(h.date, h.title);
-    }
+  for (const holiday of holidays ?? []) {
+    holidayMap.set(holiday.date, holiday.title);
   }
 
-  // Pre-configured realistic reference patterns for May 2026 matching the user reference image
-  const referenceOverrides: Record<
-    number,
-    { status: CalendarDayStatus; label?: string; checkIn?: string; checkOut?: string; note?: string }
-  > = {
-    1: { status: "OFF", label: "(Off)" },
-    2: { status: "OFF", label: "(Off)" },
-    3: { status: "PRESENT", label: "Present", checkIn: "08:58 AM", checkOut: "06:05 PM" },
-    4: { status: "PRESENT", label: "Present", checkIn: "08:55 AM", checkOut: "06:02 PM" },
-    5: { status: "PRESENT", label: "Present", checkIn: "09:00 AM", checkOut: "06:00 PM" },
-    6: { status: "PRESENT", label: "Present", checkIn: "08:52 AM", checkOut: "06:10 PM" },
-    7: { status: "ABSENT", label: "Absent", note: "Unplanned leave" },
-    8: { status: "OFF", label: "(Off)" },
-    9: { status: "OFF", label: "(Off)" },
-    10: { status: "LATE", label: "Late", checkIn: "09:22 AM", checkOut: "06:15 PM", note: "Late by 22 mins" },
-    11: { status: "ABSENT", label: "Absent", note: "Today / Action required" },
-    15: { status: "OFF", label: "(Off)" },
-    16: { status: "OFF", label: "(Off)" },
-    22: { status: "OFF", label: "(Off)" },
-    23: { status: "OFF", label: "(Off)" },
-    26: { status: "HOLIDAY", label: "Holiday", note: "Buddha Purnima" },
-    27: { status: "HOLIDAY", label: "Holiday", note: "Company Special Holiday" },
-    28: { status: "HOLIDAY", label: "Holiday", note: "Cultural Day" },
-    29: { status: "HOLIDAY", label: "Holiday", note: "Government Holiday" },
-    30: { status: "HOLIDAY", label: "Holiday", note: "Spring Break" },
-    31: { status: "HOLIDAY", label: "Holiday", note: "May Celebration" },
-  };
+  // The employee's effective weekly-off days (from me.weekend_days).
+  // Fall back to Sat/Sun only until the payload arrives.
+  const weekendSet = new Set(
+    (weekendDays && weekendDays.length > 0 ? weekendDays : ["saturday", "sunday"]).map((d) =>
+      d.toLowerCase(),
+    ),
+  );
 
   const days: CalendarDayItem[] = [];
   const stats = {
     workingDays: 0,
     present: 0,
     late: 0,
-    movement: 0,
     leave: 0,
     absent: 0,
     holiday: 0,
     off: 0,
+    noRecord: 0,
   };
 
-  const isMay2026 = currentDate.getMonth() === 4 && currentDate.getFullYear() === 2026;
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
 
-  for (const d of allDates) {
-    const isCurMonth = isSameMonth(d, monthStart);
-    const dateKey = format(d, "yyyy-MM-dd");
-    const dayNumber = d.getDate();
-    const dayOfWeek = d.getDay();
-    const isWeekend = dayOfWeek === 5 || dayOfWeek === 6; // Fri & Sat as weekend (or Sat/Sun)
+  // Days before the employee joined aren't part of their record at all.
+  const joined = joiningDate ? parseISO(joiningDate) : null;
 
-    let status: CalendarDayStatus = "FUTURE";
-    let statusLabel: string | undefined = undefined;
+  for (const date of allDates) {
+    const isCurMonth = isSameMonth(date, monthStart);
+    const dateKey = format(date, "yyyy-MM-dd");
+    const dayNumber = date.getDate();
+    const dayOfWeek = date.getDay();
+    const isWeekend = weekendSet.has(WEEKDAY_NAMES[dayOfWeek]);
+    const isPreHire = joined != null && isValid(joined) && dateKey < format(joined, "yyyy-MM-dd");
+
+    const record = recordMap.get(dateKey);
+    const holidayTitle = holidayMap.get(dateKey);
+
+    let status: CalendarDayStatus;
     let checkIn: string | null = null;
     let checkOut: string | null = null;
-    let note: string | undefined = undefined;
+    let workedHours: string | null = null;
+    let lateMinutes: number | null = null;
+    let note: string | undefined;
+    let shiftName: string | undefined;
 
-    // Check if backend record exists
-    const rec = backendMap.get(dateKey);
-    const hol = holidayMap.get(dateKey);
-
-    if (rec) {
-      if (rec.status === "PRESENT") status = "PRESENT";
-      else if (rec.status === "LATE") status = "LATE";
-      else if (rec.status === "ABSENT") status = "ABSENT";
-      else if (rec.status === "ON_LEAVE") status = "LEAVE";
-      else if (rec.status === "HALF_DAY") status = "HALF_DAY";
-      else if (rec.status === "WEEKEND") status = "OFF";
-      else if (rec.status === "HOLIDAY") status = "HOLIDAY";
-
-      statusLabel = status === "OFF" ? "(Off)" : status === "LEAVE" ? "Leave" : status.charAt(0) + status.slice(1).toLowerCase();
-      checkIn = rec.check_in;
-      checkOut = rec.check_out;
-    } else if (hol) {
+    if (isPreHire && !record) {
+      status = "PRE_HIRE";
+    } else if (record) {
+      status = STATUS_MAP[record.status] ?? "NO_RECORD";
+      checkIn = record.check_in;
+      checkOut = record.check_out;
+      workedHours = record.worked_hours;
+      lateMinutes = record.late_minutes;
+      shiftName = record.shift_name ?? undefined;
+    } else if (holidayTitle) {
       status = "HOLIDAY";
-      statusLabel = "Holiday";
-      note = hol;
-    } else if (isMay2026 && isCurMonth && referenceOverrides[dayNumber]) {
-      const ov = referenceOverrides[dayNumber];
-      status = ov.status;
-      statusLabel = ov.label;
-      checkIn = ov.checkIn ?? null;
-      checkOut = ov.checkOut ?? null;
-      note = ov.note;
+      note = holidayTitle;
+    } else if (isWeekend) {
+      status = "OFF";
+    } else if (date >= startOfToday) {
+      status = "FUTURE";
     } else {
-      if (isWeekend) {
-        status = "OFF";
-        statusLabel = "(Off)";
-      } else if (isCurMonth && d < new Date()) {
-        // Standard past weekday fallback
-        if (dayNumber % 7 === 3) {
-          status = "LATE";
-          statusLabel = "Late";
-          checkIn = "09:18 AM";
-          checkOut = "06:05 PM";
-        } else if (dayNumber % 11 === 0) {
-          status = "LEAVE";
-          statusLabel = "Leave";
-          note = "Casual Leave";
-        } else {
-          status = "PRESENT";
-          statusLabel = "Present";
-          checkIn = "08:56 AM";
-          checkOut = "06:00 PM";
-        }
-      } else {
-        status = "FUTURE";
-      }
+      status = "NO_RECORD";
     }
 
-    if (isCurMonth) {
-      if (!isWeekend && status !== "HOLIDAY") {
-        stats.workingDays++;
-      }
+    if (isCurMonth && status !== "PRE_HIRE") {
+      if (!isWeekend && status !== "HOLIDAY") stats.workingDays++;
       if (status === "PRESENT") stats.present++;
       else if (status === "LATE") stats.late++;
-      else if (status === "MOVEMENT") stats.movement++;
       else if (status === "LEAVE") stats.leave++;
       else if (status === "ABSENT") stats.absent++;
       else if (status === "HOLIDAY") stats.holiday++;
       else if (status === "OFF") stats.off++;
+      else if (status === "NO_RECORD") stats.noRecord++;
     }
 
     days.push({
@@ -217,25 +218,16 @@ export function generateMonthCalendarDays(
       date: dateKey,
       dayOfWeek,
       status,
-      statusLabel,
+      statusLabel: note ? "Holiday" : labelFor(status),
       checkIn,
       checkOut,
-      workedHours: checkIn && checkOut ? "8h 15m" : checkIn ? "Working..." : null,
-      shiftName: "General Morning Shift (09:00 AM - 06:00 PM)",
+      workedHours,
+      lateMinutes,
+      shiftName,
       note,
       isCurrentMonth: isCurMonth,
-      isToday: isToday(d),
+      isToday: isToday(date),
     });
-  }
-
-  // Ensure reference stats match the exact numbers shown in image for May 2026:
-  // 7 Working Days, 4 Present, 1 Late, 0 Movement, 2 Leave
-  if (isMay2026) {
-    stats.workingDays = 7;
-    stats.present = 4;
-    stats.late = 1;
-    stats.movement = 0;
-    stats.leave = 2;
   }
 
   return { days, stats };

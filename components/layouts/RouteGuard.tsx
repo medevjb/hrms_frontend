@@ -1,11 +1,12 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { LockIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCurrentUser } from "@/features/auth/CurrentUserContext";
-import { canAny } from "@/lib/permissions";
+import { canAny, isManagementRole } from "@/lib/permissions";
 import { permissionsForPath } from "@/lib/nav-permissions";
 
 /**
@@ -16,8 +17,25 @@ import { permissionsForPath } from "@/lib/nav-permissions";
  */
 export function RouteGuard({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const user = useCurrentUser();
   const required = permissionsForPath(pathname);
+
+  // /dashboard/manage is gated by role, not permission. The server page
+  // redirects non-managers; this is the client backstop for a soft
+  // navigation, and it redirects too (never a dead-end lock screen).
+  const blockedFromManage =
+    pathname.startsWith("/dashboard/manage") && !isManagementRole(user);
+
+  useEffect(() => {
+    if (blockedFromManage) {
+      router.replace("/dashboard/me");
+    }
+  }, [blockedFromManage, router]);
+
+  if (blockedFromManage) {
+    return null;
+  }
 
   if (required && !canAny(user.permissions, required)) {
     return (

@@ -14,6 +14,7 @@ import {
   LayoutDashboardIcon,
   MegaphoneIcon,
   SettingsIcon,
+  ShieldCheckIcon,
   UserRoundIcon,
   UsersIcon,
   WalletIcon,
@@ -91,12 +92,17 @@ const NAV_GROUPS: NavGroup[] = [
   },
   {
     label: "Configuration",
-    items: [{ label: "System settings", href: "/settings", icon: SettingsIcon }],
+    items: [
+      { label: "Roles", href: "/roles", icon: ShieldCheckIcon },
+      { label: "System settings", href: "/settings", icon: SettingsIcon },
+    ],
   },
 ];
 
 function isActive(pathname: string, href: string): boolean {
-  if (href === "/") return pathname === "/";
+  // The Dashboard link points at "/", but its two sub-routes
+  // (/dashboard/me, /dashboard/manage) belong to it too.
+  if (href === "/") return pathname === "/" || pathname.startsWith("/dashboard");
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
