@@ -34,6 +34,8 @@ function initialValues(shift?: Shift) {
         end_time: shift.end_time,
         expected_work_minutes: shift.expected_work_minutes,
         break_minutes: shift.break_minutes,
+        break_start: shift.break_start ?? "",
+        break_end: shift.break_end ?? "",
         late_grace_minutes: shift.late_grace_minutes?.toString() ?? "",
         active: shift.active,
       }
@@ -43,9 +45,20 @@ function initialValues(shift?: Shift) {
         end_time: "",
         expected_work_minutes: 480,
         break_minutes: 60,
+        break_start: "",
+        break_end: "",
         late_grace_minutes: "",
         active: true,
       };
+}
+
+/** Minutes between two "HH:MM" times, or null if either is missing/invalid. */
+function breakWindowMinutes(start: string, end: string): number | null {
+  if (!start || !end) return null;
+  const [sh, sm] = start.split(":").map(Number);
+  const [eh, em] = end.split(":").map(Number);
+  const diff = eh * 60 + em - (sh * 60 + sm);
+  return diff > 0 ? diff : null;
 }
 
 function ShiftForm({ shift, onClose }: { shift?: Shift; onClose: () => void }) {
@@ -80,7 +93,9 @@ function ShiftForm({ shift, onClose }: { shift?: Shift; onClose: () => void }) {
       start_time: values.start_time,
       end_time: values.end_time,
       expected_work_minutes: values.expected_work_minutes,
-      break_minutes: values.break_minutes,
+      break_minutes: breakWindowMinutes(values.break_start, values.break_end) ?? values.break_minutes,
+      break_start: values.break_start === "" ? null : values.break_start,
+      break_end: values.break_end === "" ? null : values.break_end,
       late_grace_minutes: values.late_grace_minutes === "" ? null : Number(values.late_grace_minutes),
       active: values.active,
     };
@@ -107,6 +122,7 @@ function ShiftForm({ shift, onClose }: { shift?: Shift; onClose: () => void }) {
   }
 
   const pending = createShift.isPending || updateShift.isPending;
+  const windowMinutes = breakWindowMinutes(values.break_start, values.break_end);
 
   return (
     <>
@@ -141,29 +157,46 @@ function ShiftForm({ shift, onClose }: { shift?: Shift; onClose: () => void }) {
             />
           </FormField>
         </div>
-        <div className="grid grid-cols-2 gap-4">
-          <FormField
-            label="Expected work minutes"
-            htmlFor="expected_work_minutes"
-            error={fieldErrors.expected_work_minutes}
-          >
-            <Input
-              id="expected_work_minutes"
-              type="number"
-              min={1}
-              value={values.expected_work_minutes}
-              onChange={(e) => set("expected_work_minutes", Number(e.target.value))}
-            />
-          </FormField>
-          <FormField label="Break minutes" htmlFor="break_minutes">
-            <Input
-              id="break_minutes"
-              type="number"
-              min={0}
-              value={values.break_minutes}
-              onChange={(e) => set("break_minutes", Number(e.target.value))}
-            />
-          </FormField>
+        <FormField
+          label="Expected work minutes"
+          htmlFor="expected_work_minutes"
+          error={fieldErrors.expected_work_minutes}
+        >
+          <Input
+            id="expected_work_minutes"
+            type="number"
+            min={1}
+            value={values.expected_work_minutes}
+            onChange={(e) => set("expected_work_minutes", Number(e.target.value))}
+          />
+        </FormField>
+        <div className="rounded-xl border border-border/70 p-3 space-y-3">
+          <p className="text-sm font-medium text-foreground">
+            Break time
+            <span className="ml-2 text-xs font-normal text-muted-foreground">
+              {windowMinutes !== null
+                ? `${windowMinutes} min`
+                : "Set a start and end so it shows on the schedule"}
+            </span>
+          </p>
+          <div className="grid grid-cols-2 gap-4">
+            <FormField label="Break start time" htmlFor="break_start" error={fieldErrors.break_start}>
+              <Input
+                id="break_start"
+                type="time"
+                value={values.break_start}
+                onChange={(e) => set("break_start", e.target.value)}
+              />
+            </FormField>
+            <FormField label="Break end time" htmlFor="break_end" error={fieldErrors.break_end}>
+              <Input
+                id="break_end"
+                type="time"
+                value={values.break_end}
+                onChange={(e) => set("break_end", e.target.value)}
+              />
+            </FormField>
+          </div>
         </div>
         <FormField
           label="Late grace minutes (shift-specific override)"

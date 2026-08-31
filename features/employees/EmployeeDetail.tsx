@@ -400,6 +400,11 @@ export function EmployeeDetail({ employeeId }: { employeeId: number }) {
                       <p className="mt-0.5 text-sm font-semibold text-foreground">
                         {employee.current_shift?.name ?? "No shift assigned"}
                       </p>
+                      {employee.current_shift?.break_start && employee.current_shift?.break_end && (
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          Break {employee.current_shift.break_start}–{employee.current_shift.break_end}
+                        </p>
+                      )}
                     </div>
                     <ShiftSelect label="Change to" value={shiftChoice} onChange={setShiftChoice} />
                     <Button

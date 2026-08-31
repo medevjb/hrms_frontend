@@ -26,7 +26,12 @@ export type Profile = {
     overtime_eligible: boolean;
     department: DepartmentSummary | null;
     team: TeamSummary | null;
-    current_shift: { id: number; name: string } | null;
+    current_shift: {
+      id: number;
+      name: string;
+      break_start: string | null;
+      break_end: string | null;
+    } | null;
     team_leader: { id: number; full_name: string } | null;
     operation_manager: { id: number; full_name: string } | null;
     phone: string | null;
