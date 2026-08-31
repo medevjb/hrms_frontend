@@ -10,6 +10,9 @@ export type Profile = {
   two_factor_enabled: boolean;
   photo_url: string | null;
   employee: {
+    first_name: string;
+    last_name: string;
+    full_name: string;
     employee_code: string;
     designation: string;
     employment_type: EmploymentType;
@@ -33,7 +36,10 @@ export type Profile = {
 };
 
 export type UpdateProfileInput = {
-  name: string;
+  // Employees send first_name/last_name; a bare account sends `name`.
+  name?: string;
+  first_name?: string;
+  last_name?: string;
   phone?: string | null;
   address?: string | null;
   emergency_contact_name?: string | null;

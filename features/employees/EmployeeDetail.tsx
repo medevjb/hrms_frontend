@@ -2,12 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { differenceInCalendarMonths, format, isValid, parseISO } from "date-fns";
 import {
   AlertCircleIcon,
   ArrowLeftIcon,
-  CheckIcon,
-  CopyIcon,
   MailIcon,
   PhoneIcon,
   SendIcon,
@@ -29,6 +26,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DatePicker } from "@/components/ui/date-picker";
+import { CopyRow, Fact, RailLabel } from "@/components/ui/DetailRail";
 import { PageLoadingSkeleton } from "@/components/ui/PageLoadingSkeleton";
 import {
   Select,
@@ -50,6 +48,7 @@ import {
 } from "@/services/employees";
 import { useCreateShiftOverride, useShifts } from "@/services/shifts";
 import { useTeams } from "@/services/teams";
+import { fmtDate, getInitials, humanize, tenure } from "@/lib/people";
 import type { Weekday } from "@/types/settings";
 import { WEEKDAYS } from "@/types/settings";
 import type { EmployeeStatus } from "@/types/organization";
@@ -66,88 +65,6 @@ const STATUS_OPTIONS: { value: EmployeeStatus; label: string }[] = [
   { value: "TERMINATED", label: "Terminated" },
   { value: "ARCHIVED", label: "Archived" },
 ];
-
-function getInitials(name: string): string {
-  if (!name) return "EM";
-  const parts = name.trim().split(/\s+/);
-  if (parts.length >= 2) return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
-  return name.slice(0, 2).toUpperCase();
-}
-
-function humanize(value: string): string {
-  const text = value.replace(/_/g, " ").toLowerCase();
-  return text.charAt(0).toUpperCase() + text.slice(1);
-}
-
-function fmtDate(value: string | null, pattern = "d MMM yyyy"): string {
-  if (!value) return "—";
-  const parsed = parseISO(value);
-  return isValid(parsed) ? format(parsed, pattern) : value;
-}
-
-/** Length of service, phrased the way HR references it — the one fact about a
- *  person that isn't already on the employee list. */
-function tenure(joiningDate: string): { headline: string; caption: string } {
-  const start = parseISO(joiningDate);
-  if (!isValid(start)) return { headline: "—", caption: "" };
-  const months = Math.max(0, differenceInCalendarMonths(new Date(), start));
-  const years = Math.floor(months / 12);
-  const rest = months % 12;
-
-  let headline = "New this month";
-  if (months >= 1 && years === 0) headline = `${rest} mo`;
-  else if (years >= 1 && rest === 0) headline = `${years} yr`;
-  else if (years >= 1) headline = `${years} yr ${rest} mo`;
-
-  return { headline, caption: `Joined ${format(start, "MMM yyyy")}` };
-}
-
-function RailLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-      {children}
-    </p>
-  );
-}
-
-function Fact({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="flex items-baseline justify-between gap-6 py-2.5">
-      <dt className="shrink-0 text-xs text-muted-foreground">{label}</dt>
-      <dd className="min-w-0 text-right text-sm font-medium break-words text-foreground">
-        {children ?? "—"}
-      </dd>
-    </div>
-  );
-}
-
-function CopyRow({
-  icon: Icon,
-  value,
-  copied,
-  onCopy,
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  value: string;
-  copied: boolean;
-  onCopy: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onCopy}
-      className="group -mx-2 flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-muted/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-    >
-      <Icon className="size-4 shrink-0 text-muted-foreground" />
-      <span className="min-w-0 flex-1 truncate text-sm font-medium">{value}</span>
-      {copied ? (
-        <CheckIcon className="size-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
-      ) : (
-        <CopyIcon className="size-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
-      )}
-    </button>
-  );
-}
 
 export function EmployeeDetail({ employeeId }: { employeeId: number }) {
   const { data: employee, isLoading, error } = useEmployee(employeeId);
