@@ -3,8 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronDownIcon, LogOutIcon, SettingsIcon, ShieldCheckIcon } from "lucide-react";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { ChevronDownIcon, LogOutIcon, SettingsIcon, ShieldCheckIcon, UserRoundIcon } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,11 +14,16 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useCurrentUser } from "@/features/auth/CurrentUserContext";
+import { canAny } from "@/lib/permissions";
+import { proxyMedia } from "@/lib/media";
+import { permissionsForPath } from "@/lib/nav-permissions";
 
 export function UserMenu() {
   const user = useCurrentUser();
   const router = useRouter();
   const [loggingOut, setLoggingOut] = useState(false);
+  const photoUrl = proxyMedia(user.photo_url);
+  const canManageSettings = canAny(user.permissions, permissionsForPath("/settings") ?? []);
 
   async function handleLogout() {
     setLoggingOut(true);
@@ -33,6 +38,7 @@ export function UserMenu() {
     <DropdownMenu>
       <DropdownMenuTrigger className="group flex items-center gap-2.5 rounded-full border border-border/60 bg-card px-2.5 py-1 text-sm outline-none transition-colors hover:border-border hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring">
         <Avatar className="size-7.5 border border-primary/20">
+          {photoUrl && <AvatarImage src={photoUrl} alt="" />}
           <AvatarFallback className="bg-primary/10 text-xs font-bold text-primary">
             {user.name.charAt(0).toUpperCase()}
           </AvatarFallback>
@@ -58,11 +64,19 @@ export function UserMenu() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild className="rounded-lg cursor-pointer">
-          <Link href="/settings">
-            <SettingsIcon className="size-4 mr-2" />
-            <span>Settings</span>
+          <Link href="/account">
+            <UserRoundIcon className="size-4 mr-2" />
+            <span>My profile</span>
           </Link>
         </DropdownMenuItem>
+        {canManageSettings && (
+          <DropdownMenuItem asChild className="rounded-lg cursor-pointer">
+            <Link href="/settings">
+              <SettingsIcon className="size-4 mr-2" />
+              <span>System settings</span>
+            </Link>
+          </DropdownMenuItem>
+        )}
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleLogout} disabled={loggingOut} className="rounded-lg text-rose-600 focus:text-rose-600 focus:bg-rose-50 dark:focus:bg-rose-950/40 cursor-pointer">
           <LogOutIcon className="size-4 mr-2" />

@@ -2,15 +2,17 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertCircleIcon, ShieldCheckIcon } from "lucide-react";
+import { AlertCircleIcon, ShieldCheckIcon, ShieldIcon } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { FormField } from "@/components/ui/form-field";
+import { PageLoadingSkeleton } from "@/components/ui/PageLoadingSkeleton";
 import { PasswordInput } from "@/components/ui/password-input";
 import { ApiError } from "@/lib/api-error";
-import { useChangePassword } from "@/services/profile";
+import { useChangePassword, useProfile } from "@/services/profile";
 
 const schema = z
   .object({
@@ -23,7 +25,34 @@ const schema = z
     path: ["password_confirmation"],
   });
 
-export function PasswordTab() {
+function TwoFactorCard({ enabled }: { enabled: boolean }) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+          {enabled ? (
+            <ShieldCheckIcon className="size-4 text-emerald-600 dark:text-emerald-400" />
+          ) : (
+            <ShieldIcon className="size-4 text-muted-foreground" />
+          )}
+          Two-factor authentication
+        </CardTitle>
+        <CardDescription>
+          {enabled
+            ? "On — you're asked for a code from your authenticator app when you sign in."
+            : "Off — sign-in only asks for your password."}
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <p className="text-xs text-muted-foreground">
+          Two-factor enrolment is handled during sign-in. Contact your HR team if you need to reset it.
+        </p>
+      </CardContent>
+    </Card>
+  );
+}
+
+function PasswordForm() {
   const router = useRouter();
   const change = useChangePassword();
   const [currentPassword, setCurrentPassword] = useState("");
@@ -53,7 +82,6 @@ export function PasswordTab() {
 
     try {
       await change.mutateAsync(parsed.data);
-      // §92.2 — the change revoked every token, this session included.
       toast.success("Password changed. Please sign in again.");
       await fetch("/api/auth/logout", { method: "POST" }).catch(() => undefined);
       router.push("/login");
@@ -71,7 +99,7 @@ export function PasswordTab() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-md space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4">
       <Alert>
         <ShieldCheckIcon />
         <AlertDescription>
@@ -124,5 +152,18 @@ export function PasswordTab() {
         {change.isPending ? "Updating…" : "Change password"}
       </Button>
     </form>
+  );
+}
+
+export function SecuritySection() {
+  const { data, isLoading } = useProfile();
+
+  if (isLoading || !data) return <PageLoadingSkeleton />;
+
+  return (
+    <div className="space-y-6">
+      <TwoFactorCard enabled={data.two_factor_enabled} />
+      <PasswordForm />
+    </div>
   );
 }
