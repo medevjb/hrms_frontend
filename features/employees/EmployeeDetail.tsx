@@ -49,6 +49,7 @@ import {
 import { useCreateShiftOverride, useShifts } from "@/services/shifts";
 import { useTeams } from "@/services/teams";
 import { fmtDate, getInitials, humanize, tenure } from "@/lib/people";
+import { proxyMedia } from "@/lib/media";
 import type { Weekday } from "@/types/settings";
 import { WEEKDAYS } from "@/types/settings";
 import type { EmployeeStatus } from "@/types/organization";
@@ -222,7 +223,7 @@ export function EmployeeDetail({ employeeId }: { employeeId: number }) {
           <div className="rounded-2xl border border-border/70 bg-card p-5 shadow-xs sm:p-6">
             <div className="flex items-center gap-4">
               <Avatar className="size-16 border border-border">
-                <AvatarImage src={employee.profile_image_path ?? undefined} alt={employee.full_name} />
+                <AvatarImage src={proxyMedia(employee.photo_url)} alt={employee.full_name} />
                 <AvatarFallback className="bg-primary/10 text-lg font-bold text-primary">
                   {getInitials(employee.full_name)}
                 </AvatarFallback>

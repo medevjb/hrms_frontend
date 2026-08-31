@@ -31,6 +31,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useCurrentUser } from "@/features/auth/CurrentUserContext";
 import { canAny } from "@/lib/permissions";
 import { proxyMedia } from "@/lib/media";
@@ -175,15 +176,21 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="p-3 border-t border-sidebar-border group-data-[collapsible=icon]:hidden">
-        <div className="flex items-center gap-2.5 rounded-xl border border-sidebar-border bg-sidebar-accent/30 p-2.5">
-          <div className="flex size-7.5 items-center justify-center rounded-lg bg-primary/10 text-xs font-bold text-primary">
-            {user.name.charAt(0).toUpperCase()}
-          </div>
+        <Link
+          href="/account"
+          className="flex items-center gap-2.5 rounded-xl border border-sidebar-border bg-sidebar-accent/30 p-2.5 transition-colors hover:bg-sidebar-accent/60"
+        >
+          <Avatar className="size-7.5 rounded-lg">
+            <AvatarImage src={proxyMedia(user.photo_url)} alt={user.name} className="rounded-lg" />
+            <AvatarFallback className="rounded-lg bg-primary/10 text-xs font-bold text-primary">
+              {user.name.charAt(0).toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
           <div className="flex-1 min-w-0">
             <p className="truncate text-xs font-semibold text-sidebar-foreground">{user.name}</p>
             <p className="truncate text-[10px] text-muted-foreground">{user.email}</p>
           </div>
-        </div>
+        </Link>
       </SidebarFooter>
     </Sidebar>
   );
