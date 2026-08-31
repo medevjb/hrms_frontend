@@ -39,6 +39,9 @@ export function ShiftSelect({
             .map((shift) => (
               <SelectItem key={shift.id} value={String(shift.id)}>
                 {shift.name} ({shift.start_time}–{shift.end_time})
+                {shift.break_start && shift.break_end
+                  ? ` · break ${shift.break_start}–${shift.break_end}`
+                  : ""}
               </SelectItem>
             ))}
         </SelectContent>

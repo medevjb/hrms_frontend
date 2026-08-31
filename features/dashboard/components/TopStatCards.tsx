@@ -1,12 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import {
   CalendarDaysIcon,
-  CheckCircle2Icon,
   ClockIcon,
   LogInIcon,
-  LogOutIcon,
   PalmtreeIcon,
   TrophyIcon,
 } from "lucide-react";
@@ -31,11 +28,11 @@ export function TopStatCards({
   isCheckInPending,
   isCheckOutPending,
 }: Props) {
-  const [isCheckedInState, setIsCheckedInState] = useState<boolean>(kpi.workingPeriod.isCheckedIn);
-
-  useEffect(() => {
-    setIsCheckedInState(kpi.workingPeriod.isCheckedIn);
-  }, [kpi.workingPeriod.isCheckedIn]);
+  const isCheckedIn = kpi.workingPeriod.isCheckedIn;
+  const shiftWindow =
+    kpi.workingPeriod.startTime && kpi.workingPeriod.endTime
+      ? `${kpi.workingPeriod.startTime} - ${kpi.workingPeriod.endTime}`
+      : "No shift scheduled";
 
   return (
     <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 xl:grid-cols-4">
@@ -47,15 +44,13 @@ export function TopStatCards({
               Today Working Period
             </p>
             <h3 className="font-heading text-base font-bold text-foreground truncate">
-              {isCheckedInState
+              {isCheckedIn
                 ? kpi.workingPeriod.checkInTime
                   ? `In at ${kpi.workingPeriod.checkInTime}`
-                  : "Checked In"
+                  : "Checked in"
                 : kpi.workingPeriod.statusText}
             </h3>
-            <p className="font-mono text-[11px] text-muted-foreground">
-              {kpi.workingPeriod.startTime} - {kpi.workingPeriod.endTime}
-            </p>
+            <p className="font-mono text-[11px] text-muted-foreground">{shiftWindow}</p>
           </div>
 
           <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 border border-emerald-500/20">
@@ -63,9 +58,8 @@ export function TopStatCards({
           </div>
         </div>
 
-        {/* Compact Action / Status */}
         <div className="mt-2.5 pt-2 border-t border-border/40 flex items-center justify-between">
-          {!isCheckedInState ? (
+          {!isCheckedIn ? (
             <Button
               size="sm"
               variant="ghost"
@@ -74,7 +68,7 @@ export function TopStatCards({
               className="h-6.5 w-full rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-semibold text-[11px] px-2"
             >
               <LogInIcon className="mr-1 size-3" />
-              Check-In Now
+              Check in now
             </Button>
           ) : (
             <div className="flex w-full items-center justify-between">
@@ -88,7 +82,7 @@ export function TopStatCards({
                 disabled={isCheckOutPending}
                 className="text-[11px] font-semibold text-rose-600 hover:underline"
               >
-                Check Out
+                Check out
               </button>
             </div>
           )}
@@ -103,21 +97,18 @@ export function TopStatCards({
               Length of Service
             </p>
             <h3 className="font-heading text-base font-bold text-foreground truncate">
-              {kpi.lengthOfService.duration}
+              {kpi.lengthOfService.duration ?? "—"}
             </h3>
             <p className="text-[11px] text-muted-foreground truncate">
-              Joined {kpi.lengthOfService.joiningDate}
+              {kpi.lengthOfService.joiningDate
+                ? `Joined ${kpi.lengthOfService.joiningDate}`
+                : "Joining date not on file"}
             </p>
           </div>
 
           <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400 border border-indigo-500/20">
             <TrophyIcon className="size-4.5" />
           </div>
-        </div>
-
-        <div className="mt-2.5 pt-2 border-t border-border/40 flex items-center justify-between text-[11px] text-muted-foreground">
-          <span className="font-medium text-indigo-600 dark:text-indigo-400">Full-Time Regular</span>
-          <span className="font-mono text-[10px] text-muted-foreground">Active</span>
         </div>
       </Card>
 
@@ -129,10 +120,10 @@ export function TopStatCards({
               Upcoming Leave
             </p>
             <h3 className="font-heading text-base font-bold text-foreground truncate">
-              {kpi.upcomingLeave.leaveType}
+              {kpi.upcomingLeave ? kpi.upcomingLeave.leaveType : "Nothing booked"}
             </h3>
             <p className="text-[11px] text-muted-foreground truncate">
-              {kpi.upcomingLeave.dateFormatted}
+              {kpi.upcomingLeave ? kpi.upcomingLeave.dateFormatted : "No approved leave ahead"}
             </p>
           </div>
 
@@ -143,14 +134,18 @@ export function TopStatCards({
 
         <div className="mt-2.5 pt-2 border-t border-border/40 flex items-center justify-between text-[11px]">
           <span className="font-semibold text-amber-600 dark:text-amber-400">
-            {kpi.upcomingLeave.status === "APPROVED" ? "Approved" : "In Review"}
+            {kpi.upcomingLeave
+              ? kpi.upcomingLeave.status === "APPROVED"
+                ? "Approved"
+                : "In review"
+              : ""}
           </span>
           <button
             type="button"
             onClick={onRequestLeave}
             className="font-semibold text-primary hover:underline"
           >
-            Apply →
+            Request leave →
           </button>
         </div>
       </Card>
@@ -162,24 +157,15 @@ export function TopStatCards({
             <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide truncate">
               Attendance Today
             </p>
-            <h3 className="font-heading text-base font-bold text-emerald-600 dark:text-emerald-400 truncate">
+            <h3 className="font-heading text-base font-bold text-foreground truncate">
               {kpi.attendanceToday.status}
             </h3>
-            <p className="text-[11px] text-muted-foreground truncate">
-              {kpi.attendanceToday.subtext}
-            </p>
+            <p className="text-[11px] text-muted-foreground truncate">{kpi.attendanceToday.subtext}</p>
           </div>
 
           <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 border border-emerald-500/20">
             <CalendarDaysIcon className="size-4.5" />
           </div>
-        </div>
-
-        <div className="mt-2.5 pt-2 border-t border-border/40 flex items-center justify-between text-[11px]">
-          <span className="flex items-center gap-1 font-semibold text-emerald-600 dark:text-emerald-400">
-            <CheckCircle2Icon className="size-3" /> Shift Compliant
-          </span>
-          <span className="font-mono text-[10px] text-muted-foreground">Grace: 15m</span>
         </div>
       </Card>
     </div>

@@ -15,6 +15,8 @@ export type SaveShiftInput = {
   end_time: string;
   expected_work_minutes: number;
   break_minutes?: number;
+  break_start?: string | null;
+  break_end?: string | null;
   late_grace_minutes?: number | null;
   active?: boolean;
 };
