@@ -35,7 +35,6 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # env files (can opt-in for committing if needed)
-.env*
 !.env.example
 
 # vercel
@@ -44,3 +43,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Local agent tooling (openspec plugin skills/commands)
+.claude/
+config.bat
