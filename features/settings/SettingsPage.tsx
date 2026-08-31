@@ -1,55 +1,95 @@
 "use client";
 
-import { PageHeader } from "@/components/ui/PageHeader";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  BuildingIcon,
+  CalendarOffIcon,
+  ClockIcon,
+  MailIcon,
+  PaletteIcon,
+  PlaneIcon,
+  TimerIcon,
+  WalletIcon,
+} from "lucide-react";
+import {
+  SettingsScaffold,
+  type SettingsSection,
+  type SettingsSectionGroup,
+} from "@/components/layouts/SettingsScaffold";
 import { useCurrentUser } from "@/features/auth/CurrentUserContext";
 import { canAny } from "@/lib/permissions";
 import type { PermissionName } from "@/types/auth";
 import { AttendanceSettingsTab } from "./AttendanceSettingsTab";
+import { BrandingSection } from "./BrandingSection";
+import { EmailSection } from "./EmailSection";
 import { LeaveSettingsTab } from "./LeaveSettingsTab";
 import { OrganizationSettingsTab } from "./OrganizationSettingsTab";
 import { OvertimeSettingsTab } from "./OvertimeSettingsTab";
-import { PasswordTab } from "./PasswordTab";
 import { PayrollSettingsTab } from "./PayrollSettingsTab";
-import { ProfileTab } from "./ProfileTab";
+import { WeeklyOffsSection } from "./WeeklyOffsSection";
 
-type SettingsTab = {
-  value: string;
-  label: string;
-  permissions?: PermissionName[];
-  render: () => React.ReactNode;
-};
+type GuardedSection = SettingsSection & { permissions: PermissionName[] };
 
-const TABS: SettingsTab[] = [
-  { value: "profile", label: "Profile", render: () => <ProfileTab /> },
-  { value: "password", label: "Password", render: () => <PasswordTab /> },
+const ORGANIZATION: GuardedSection[] = [
   {
-    value: "organization",
-    label: "Organization",
+    value: "general",
+    label: "General",
+    icon: BuildingIcon,
+    blurb: "Company name, timezone, currency, and the default weekly off day.",
     permissions: ["settings.manage"],
     render: () => <OrganizationSettingsTab />,
   },
   {
+    value: "branding",
+    label: "Branding",
+    icon: PaletteIcon,
+    blurb: "The name, logo, and favicon shown across the app and on the sign-in screen.",
+    permissions: ["settings.manage"],
+    render: () => <BrandingSection />,
+  },
+  {
+    value: "email",
+    label: "Email",
+    icon: MailIcon,
+    blurb: "The address invitations and notifications are sent from, and the SMTP server that delivers them.",
+    permissions: ["settings.manage"],
+    render: () => <EmailSection />,
+  },
+  {
+    value: "weekly-offs",
+    label: "Weekly offs",
+    icon: CalendarOffIcon,
+    blurb: "Give a person or a whole team a different rest day from the organization default.",
+    permissions: ["employee.update"],
+    render: () => <WeeklyOffsSection />,
+  },
+];
+
+const POLICIES: GuardedSection[] = [
+  {
     value: "attendance",
     label: "Attendance",
+    icon: ClockIcon,
     permissions: ["attendance.settings.manage"],
     render: () => <AttendanceSettingsTab />,
   },
   {
     value: "leave",
     label: "Leave",
+    icon: PlaneIcon,
     permissions: ["leave.policy.manage"],
     render: () => <LeaveSettingsTab />,
   },
   {
     value: "overtime",
     label: "Overtime",
+    icon: TimerIcon,
     permissions: ["overtime.policy.manage"],
     render: () => <OvertimeSettingsTab />,
   },
   {
     value: "payroll",
     label: "Payroll",
+    icon: WalletIcon,
     permissions: ["payroll.settings.manage"],
     render: () => <PayrollSettingsTab />,
   },
@@ -57,35 +97,19 @@ const TABS: SettingsTab[] = [
 
 export function SettingsPage() {
   const user = useCurrentUser();
-  const tabs = TABS.filter((tab) => !tab.permissions || canAny(user.permissions, tab.permissions));
-  const hasOrgSettings = tabs.length > 2;
+  const allow = (sections: GuardedSection[]) =>
+    sections.filter((section) => canAny(user.permissions, section.permissions));
+
+  const groups: SettingsSectionGroup[] = [
+    { label: "Organization", sections: allow(ORGANIZATION) },
+    { label: "Policies", sections: allow(POLICIES) },
+  ].filter((group) => group.sections.length > 0);
 
   return (
-    <>
-      <PageHeader
-        title="Settings"
-        description={
-          hasOrgSettings
-            ? "Your profile and password, plus the organization-wide configuration you manage."
-            : "Your profile and password."
-        }
-      />
-
-      <Tabs defaultValue="profile">
-        <TabsList className="max-w-full overflow-x-auto [&::-webkit-scrollbar]:hidden">
-          {tabs.map((tab) => (
-            <TabsTrigger key={tab.value} value={tab.value}>
-              {tab.label}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-
-        {tabs.map((tab) => (
-          <TabsContent key={tab.value} value={tab.value} className="pt-6">
-            {tab.render()}
-          </TabsContent>
-        ))}
-      </Tabs>
-    </>
+    <SettingsScaffold
+      title="System settings"
+      description="Organization-wide configuration for the whole HRM."
+      groups={groups}
+    />
   );
 }

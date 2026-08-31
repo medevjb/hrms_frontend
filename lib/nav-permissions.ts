@@ -19,8 +19,17 @@ export const SECTION_PERMISSIONS: Record<string, PermissionName[]> = {
   "/announcements": ["announcement.view"],
   "/reports": ["report.view"],
   "/audit": ["audit.view"],
-  // /settings is intentionally absent — every user has a profile and a
-  // password tab there; SettingsPage gates the admin tabs itself.
+  // System settings is admin-only — the caller needs at least one of the
+  // configuration permissions. SystemSettingsPage gates each section
+  // further. /account is intentionally absent: every user has one.
+  "/settings": [
+    "settings.manage",
+    "attendance.settings.manage",
+    "leave.policy.manage",
+    "overtime.policy.manage",
+    "payroll.settings.manage",
+    "employee.update", // reaches the Weekly offs section only
+  ],
 };
 
 /** The permissions gating `pathname`, or undefined if it's open to everyone

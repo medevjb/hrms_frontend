@@ -45,10 +45,13 @@ import {
   useEmployee,
   useResendInvitation,
   useTransferEmployee,
+  useUpdateEmployee,
   useUpdateEmployeeStatus,
 } from "@/services/employees";
 import { useCreateShiftOverride, useShifts } from "@/services/shifts";
 import { useTeams } from "@/services/teams";
+import type { Weekday } from "@/types/settings";
+import { WEEKDAYS } from "@/types/settings";
 import type { EmployeeStatus } from "@/types/organization";
 import { EmployeeDocumentsSection } from "./EmployeeDocumentsSection";
 import { EmployeeSalarySection } from "./EmployeeSalarySection";
@@ -153,6 +156,7 @@ export function EmployeeDetail({ employeeId }: { employeeId: number }) {
   const transferEmployee = useTransferEmployee(employeeId);
   const updateStatus = useUpdateEmployeeStatus(employeeId);
   const assignShift = useAssignShift(employeeId);
+  const updateEmployee = useUpdateEmployee(employeeId);
   const createShiftOverride = useCreateShiftOverride();
   const resendInvitation = useResendInvitation();
 
@@ -532,6 +536,54 @@ export function EmployeeDetail({ employeeId }: { employeeId: number }) {
                     >
                       Transfer employee
                     </Button>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm font-semibold">Weekly off</CardTitle>
+                    <CardDescription>
+                      This person&apos;s rest day. Leave on the organization default unless they work
+                      a different one.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="rounded-xl border border-border/70 bg-muted/30 px-4 py-3">
+                      <RailLabel>Current</RailLabel>
+                      <p className="mt-0.5 text-sm font-semibold text-foreground">
+                        {employee.weekend_day
+                          ? humanize(employee.weekend_day)
+                          : "Organization default"}
+                      </p>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <label className="block text-sm font-medium text-foreground">Set to</label>
+                      <Select
+                        value={employee.weekend_day ?? "default"}
+                        onValueChange={(value) =>
+                          updateEmployee.mutate(
+                            { weekend_day: value === "default" ? null : (value as Weekday) },
+                            {
+                              onSuccess: () => toast.success("Weekly off updated"),
+                              onError: () => toast.error("Couldn't update the weekly off. Try again."),
+                            },
+                          )
+                        }
+                        disabled={updateEmployee.isPending}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="default">Organization default</SelectItem>
+                          {WEEKDAYS.map((day) => (
+                            <SelectItem key={day} value={day}>
+                              {humanize(day)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </CardContent>
                 </Card>
               </div>

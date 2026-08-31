@@ -4,12 +4,58 @@
 
 export type OrganizationSettingsData = {
   company_name: string;
+  app_title: string | null;
   company_logo_path: string | null;
+  logo_url: string | null;
+  favicon_url: string | null;
   timezone: string;
   currency: string;
   currency_decimal_places: number;
   weekend_days: string[];
+  // §85 — the one organization-wide weekly off day, overridable per employee.
+  default_weekend_day: Weekday;
   default_shift_id: number | null;
+};
+
+export type Weekday =
+  | "monday"
+  | "tuesday"
+  | "wednesday"
+  | "thursday"
+  | "friday"
+  | "saturday"
+  | "sunday";
+
+// Mirrors backend BrandingResource — served publicly and on /auth/me.
+export type Branding = {
+  company_name: string;
+  app_title: string;
+  logo_url: string | null;
+  favicon_url: string | null;
+};
+
+// Mirrors backend MailSettingsResource. The password is never returned —
+// `mail_password_set` says whether one is stored.
+export type MailSettings = {
+  mail_from_name: string | null;
+  mail_from_address: string | null;
+  mail_host: string | null;
+  mail_port: number | null;
+  mail_username: string | null;
+  mail_encryption: "tls" | "ssl" | null;
+  mail_password_set: boolean;
+  is_active: boolean;
+};
+
+export type MailSettingsInput = {
+  mail_from_name?: string | null;
+  mail_from_address?: string | null;
+  mail_host?: string | null;
+  mail_port?: number | null;
+  mail_username?: string | null;
+  mail_encryption?: "tls" | "ssl" | null;
+  // Omit to keep the stored password; send "" to clear it.
+  mail_password?: string;
 };
 
 export type MissingCheckoutPolicy = "LEAVE_OPEN" | "AUTO_CLOSE_AT_SHIFT_END";
