@@ -7,6 +7,10 @@ export type Shift = {
   end_time: string;
   expected_work_minutes: number;
   break_minutes: number;
+  // Optional scheduled break window ("13:00"), null when the shift has no
+  // fixed break time. break_minutes tracks the window when one is set.
+  break_start: string | null;
+  break_end: string | null;
   late_grace_minutes: number | null;
   is_overnight: boolean;
   active: boolean;

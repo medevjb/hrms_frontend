@@ -45,7 +45,12 @@ export type Employee = {
   team: TeamSummary | null;
   team_leader: EmployeeSummary | null;
   operation_manager: EmployeeSummary | null;
-  current_shift: { id: number; name: string } | null;
+  current_shift: {
+    id: number;
+    name: string;
+    break_start: string | null;
+    break_end: string | null;
+  } | null;
   created_at: string;
   updated_at: string;
 };
