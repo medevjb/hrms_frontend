@@ -13,10 +13,11 @@ import type {
   PayrollSettings,
 } from "@/types/settings";
 
-export function useOrganizationSettings() {
+export function useOrganizationSettings(options: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: ["settings", "organization"],
     queryFn: () => browserFetch<OrganizationSettingsData>("/settings/organization"),
+    enabled: options.enabled ?? true,
   });
 }
 

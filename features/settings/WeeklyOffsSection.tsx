@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useCurrentUser } from "@/features/auth/CurrentUserContext";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { useRowSelection } from "@/hooks/use-row-selection";
 import { apiErrorMessage } from "@/lib/api-error";
@@ -69,8 +70,11 @@ export function WeeklyOffsSection() {
   const [dayFilter, setDayFilter] = useState<string>("all");
   const [bulkDay, setBulkDay] = useState<string>("");
 
+  const user = useCurrentUser();
   const debouncedSearch = useDebouncedValue(search, 300);
-  const { data: orgSettings } = useOrganizationSettings();
+  const { data: orgSettings } = useOrganizationSettings({
+    enabled: user.permissions.includes("settings.manage"),
+  });
   const { data: teams } = useTeams();
   const assign = useAssignWeeklyOff();
 
