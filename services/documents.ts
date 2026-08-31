@@ -53,3 +53,8 @@ export function useDeleteDocument(employeeId: number) {
 export function documentDownloadUrl(id: number): string {
   return `/api/proxy/documents/${id}/download`;
 }
+
+/** Inline stream — opens a PDF or image in the browser instead of downloading. */
+export function documentPreviewUrl(id: number): string {
+  return `/api/proxy/documents/${id}/preview`;
+}

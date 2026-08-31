@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { PageLoadingSkeleton } from "@/components/ui/PageLoadingSkeleton";
+import { SettingsCard } from "@/components/ui/SettingsCard";
 import {
   Select,
   SelectContent,
@@ -54,7 +55,8 @@ function Form({ initial }: { initial: PayrollSettings }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-lg space-y-4">
+    <SettingsCard title="Payroll rules">
+      <form onSubmit={handleSubmit} className="space-y-4">
       {error && (
         <Alert variant="destructive">
           <AlertCircleIcon />
@@ -135,10 +137,11 @@ function Form({ initial }: { initial: PayrollSettings }) {
         ))}
       </div>
 
-      <Button type="submit" disabled={update.isPending}>
-        Save payroll settings
-      </Button>
-    </form>
+        <Button type="submit" disabled={update.isPending}>
+          Save payroll settings
+        </Button>
+      </form>
+    </SettingsCard>
   );
 }
 

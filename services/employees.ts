@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { browserFetch } from "@/lib/browser-api";
 import type { PaginationMeta } from "@/types/api";
 import type { Employee, EmployeeStatus, EmploymentType } from "@/types/organization";
+import type { Weekday } from "@/types/settings";
 
 export type EmployeeSort =
   | "name"
@@ -21,6 +22,8 @@ export type EmployeeFilters = {
   operation_manager_id?: number;
   shift_id?: number;
   overtime_eligible?: boolean;
+  // A Weekday, or "default" for everyone still on the org default.
+  weekend_day?: Weekday | "default";
   unassigned?: boolean;
   joined_from?: string;
   joined_to?: string;
@@ -46,6 +49,7 @@ function buildQuery(filters: EmployeeFilters): string {
   setFilter("team_leader_id", filters.team_leader_id);
   setFilter("operation_manager_id", filters.operation_manager_id);
   setFilter("shift_id", filters.shift_id);
+  setFilter("weekend_day", filters.weekend_day);
   setFilter("unassigned", filters.unassigned || undefined);
   setFilter("joined_from", filters.joined_from);
   setFilter("joined_to", filters.joined_to);
@@ -95,6 +99,7 @@ export type CreateEmployeeInput = {
   confirmation_date?: string;
   office_location?: string;
   timezone?: string;
+  weekend_day?: Weekday | null;
   overtime_eligible?: boolean;
 };
 
@@ -119,6 +124,24 @@ export function useUpdateEmployee(id: number) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["employees"] });
     },
+  });
+}
+
+/**
+ * Bulk-assign a weekly off day across a selection of employees. A null
+ * weekend_day puts them back on the organization default. Ids outside the
+ * caller's scope are silently skipped by the API.
+ */
+export function useAssignWeeklyOff() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: { employee_ids: number[]; weekend_day: Weekday | null }) =>
+      browserFetch<{ updated: number[] }>("/employees/weekly-offs", {
+        method: "PATCH",
+        body: input,
+      }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["employees"] }),
   });
 }
 

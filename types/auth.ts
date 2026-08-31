@@ -73,5 +73,12 @@ export type CurrentUser = {
   // §142 — organization timezone is authoritative for display everywhere,
   // not just evaluation; every session carries it, since most employees
   // don't hold settings.manage to read it from /settings/organization.
-  organization: { timezone: string };
+  // name/app_title/logo_url ride along so the app shell renders branded
+  // without a second request (§85).
+  organization: {
+    timezone: string;
+    name: string;
+    app_title: string;
+    logo_url: string | null;
+  };
 };

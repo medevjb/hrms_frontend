@@ -1,17 +1,26 @@
 "use client";
 
 import { useState } from "react";
-import { AlertCircleIcon, CircleCheckIcon } from "lucide-react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { FormField } from "@/components/ui/form-field";
+import { FormStatus } from "@/components/ui/FormStatus";
 import { Input } from "@/components/ui/input";
 import { PageLoadingSkeleton } from "@/components/ui/PageLoadingSkeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ApiError } from "@/lib/api-error";
 import { useOrganizationSettings, useUpdateOrganizationSettings } from "@/services/settings";
-import type { OrganizationSettingsData } from "@/types/settings";
+import type { OrganizationSettingsData, Weekday } from "@/types/settings";
 import { WEEKDAYS } from "@/types/settings";
+
+function titleCase(value: string): string {
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
 
 function Form({ initial }: { initial: OrganizationSettingsData }) {
   const update = useUpdateOrganizationSettings();
@@ -22,17 +31,8 @@ function Form({ initial }: { initial: OrganizationSettingsData }) {
     timezone: initial.timezone,
     currency: initial.currency,
     currency_decimal_places: initial.currency_decimal_places,
-    weekend_days: initial.weekend_days,
+    default_weekend_day: initial.default_weekend_day,
   });
-
-  function toggleWeekendDay(day: string, checked: boolean) {
-    setValues((current) => ({
-      ...current,
-      weekend_days: checked
-        ? [...current.weekend_days, day]
-        : current.weekend_days.filter((d) => d !== day),
-    }));
-  }
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -48,19 +48,9 @@ function Form({ initial }: { initial: OrganizationSettingsData }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-lg space-y-4">
-      {error && (
-        <Alert variant="destructive">
-          <AlertCircleIcon />
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-      {saved && (
-        <Alert className="border-emerald-200 bg-emerald-50 dark:border-emerald-900 dark:bg-emerald-500/10">
-          <CircleCheckIcon className="text-emerald-600 dark:text-emerald-400" />
-          <AlertDescription className="text-emerald-800 dark:text-emerald-300">Saved.</AlertDescription>
-        </Alert>
-      )}
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <FormStatus error={error} saved={saved} />
+
       <FormField label="Company name" htmlFor="company_name">
         <Input
           id="company_name"
@@ -94,25 +84,37 @@ function Form({ initial }: { initial: OrganizationSettingsData }) {
             min={0}
             max={4}
             value={values.currency_decimal_places}
-            onChange={(e) => setValues((v) => ({ ...v, currency_decimal_places: Number(e.target.value) }))}
+            onChange={(e) =>
+              setValues((v) => ({ ...v, currency_decimal_places: Number(e.target.value) }))
+            }
           />
         </FormField>
       </div>
-      <FormField label="Weekend days">
-        <div className="flex flex-wrap gap-4">
-          {WEEKDAYS.map((day) => (
-            <label key={day} className="flex items-center gap-1.5 text-sm">
-              <Checkbox
-                checked={values.weekend_days.includes(day)}
-                onCheckedChange={(checked) => toggleWeekendDay(day, checked === true)}
-              />
-              {day[0].toUpperCase() + day.slice(1)}
-            </label>
-          ))}
-        </div>
+      <FormField
+        label="Weekly off day"
+        htmlFor="default_weekend_day"
+        description="The default rest day for everyone. Set a different day per person under Weekly offs."
+      >
+        <Select
+          value={values.default_weekend_day}
+          onValueChange={(day) =>
+            setValues((v) => ({ ...v, default_weekend_day: day as Weekday }))
+          }
+        >
+          <SelectTrigger id="default_weekend_day" className="w-56">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {WEEKDAYS.map((day) => (
+              <SelectItem key={day} value={day}>
+                {titleCase(day)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </FormField>
       <Button type="submit" disabled={update.isPending}>
-        Save organization settings
+        {update.isPending ? "Saving…" : "Save changes"}
       </Button>
     </form>
   );

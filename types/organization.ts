@@ -1,6 +1,8 @@
 // Mirrors backend/app/Enums/{EmployeeStatus,EmploymentType}.php — keep in
 // sync by hand, per docs/PRD.md §5.3.
 
+import type { Weekday } from "@/types/settings";
+
 export type EmployeeStatus =
   | "INVITED"
   | "ACTIVE"
@@ -37,6 +39,7 @@ export type Employee = {
   confirmation_date: string | null;
   office_location: string | null;
   timezone: string | null;
+  weekend_day: Weekday | null;
   overtime_eligible: boolean;
   department: DepartmentSummary | null;
   team: TeamSummary | null;

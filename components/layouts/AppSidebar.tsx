@@ -14,6 +14,7 @@ import {
   LayoutDashboardIcon,
   MegaphoneIcon,
   SettingsIcon,
+  UserRoundIcon,
   UsersIcon,
   WalletIcon,
   SparklesIcon,
@@ -33,8 +34,8 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useCurrentUser } from "@/features/auth/CurrentUserContext";
 import { canAny } from "@/lib/permissions";
+import { proxyMedia } from "@/lib/media";
 import { permissionsForPath } from "@/lib/nav-permissions";
-import { photoSrc } from "@/lib/photo";
 
 type NavItem = {
   label: string;
@@ -85,8 +86,12 @@ const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
+    label: "You",
+    items: [{ label: "My profile", href: "/account", icon: UserRoundIcon }],
+  },
+  {
     label: "Configuration",
-    items: [{ label: "Settings", href: "/settings", icon: SettingsIcon }],
+    items: [{ label: "System settings", href: "/settings", icon: SettingsIcon }],
   },
 ];
 
@@ -98,6 +103,8 @@ function isActive(pathname: string, href: string): boolean {
 export function AppSidebar() {
   const pathname = usePathname();
   const user = useCurrentUser();
+  const logoUrl = proxyMedia(user.organization.logo_url);
+  const appTitle = user.organization.app_title;
 
   const visibleGroups = NAV_GROUPS.map((group) => ({
     ...group,
@@ -111,16 +118,23 @@ export function AppSidebar() {
     <Sidebar collapsible="icon" className="border-r border-sidebar-border bg-sidebar">
       <SidebarHeader className="p-3">
         <Link href="/" className="flex items-center gap-3 rounded-xl p-1.5 transition-opacity hover:opacity-90">
-          <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-indigo-600 font-heading text-base font-extrabold text-primary-foreground shadow-md shadow-primary/20">
-            <SparklesIcon className="size-5 text-white" />
-          </div>
+          {logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element -- small branded asset, no next/image config in this app
+            <img src={logoUrl} alt="" className="size-9 shrink-0 rounded-xl object-contain" />
+          ) : (
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-indigo-600 font-heading text-base font-extrabold text-primary-foreground shadow-md shadow-primary/20">
+              <SparklesIcon className="size-5 text-white" />
+            </div>
+          )}
           <div className="flex flex-col group-data-[collapsible=icon]:hidden">
             <span className="font-heading text-base font-extrabold tracking-tight text-sidebar-foreground">
-              Agency HRM
+              {appTitle}
             </span>
-            <span className="text-[10px] font-semibold text-primary uppercase tracking-wider">
-              Enterprise Suite
-            </span>
+            {user.organization.name !== appTitle && (
+              <span className="text-[10px] font-semibold text-primary uppercase tracking-wider">
+                {user.organization.name}
+              </span>
+            )}
           </div>
         </Link>
       </SidebarHeader>
@@ -163,11 +177,11 @@ export function AppSidebar() {
 
       <SidebarFooter className="p-3 border-t border-sidebar-border group-data-[collapsible=icon]:hidden">
         <Link
-          href="/profile"
+          href="/account"
           className="flex items-center gap-2.5 rounded-xl border border-sidebar-border bg-sidebar-accent/30 p-2.5 transition-colors hover:bg-sidebar-accent/60"
         >
           <Avatar className="size-7.5 rounded-lg">
-            <AvatarImage src={photoSrc(user.photo_url)} alt={user.name} className="rounded-lg" />
+            <AvatarImage src={proxyMedia(user.photo_url)} alt={user.name} className="rounded-lg" />
             <AvatarFallback className="rounded-lg bg-primary/10 text-xs font-bold text-primary">
               {user.name.charAt(0).toUpperCase()}
             </AvatarFallback>
