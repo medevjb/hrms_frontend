@@ -74,6 +74,36 @@ export function useAttendanceList(filters: AttendanceFilters = {}) {
   });
 }
 
+/**
+ * One employee's attendance records for a single month, for the self
+ * dashboard calendar. `per_page` is lifted well past a month's worth of
+ * rows so the calendar never renders a partial month. `enabled` gates the
+ * call until the caller's own employee id is known.
+ */
+export function useSelfAttendanceMonth(
+  employeeId: number | undefined,
+  dateFrom: string,
+  dateTo: string,
+) {
+  return useQuery({
+    queryKey: ["attendance", "self-month", employeeId, dateFrom, dateTo],
+    enabled: Number.isFinite(employeeId),
+    queryFn: async () => {
+      const params = new URLSearchParams({
+        "filter[employee_id]": String(employeeId),
+        "filter[date_from]": dateFrom,
+        "filter[date_to]": dateTo,
+        per_page: "100",
+      });
+      const response = await fetch(`/api/proxy/attendance?${params.toString()}`, {
+        headers: { Accept: "application/json" },
+      });
+      if (!response.ok) throw new Error("Failed to load attendance");
+      return ((await response.json()) as AttendanceListResult).data;
+    },
+  });
+}
+
 export type AdjustAttendanceInput = {
   check_in?: string | null;
   check_out?: string | null;

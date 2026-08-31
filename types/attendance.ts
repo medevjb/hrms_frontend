@@ -37,6 +37,9 @@ export type AttendanceToday = {
   shift: { id: number; name: string } | null;
   shift_start: string | null;
   shift_end: string | null;
+  // Wall-clock "HH:MM" from the shift's scheduled break, null when unset.
+  break_start: string | null;
+  break_end: string | null;
   grace_end: string | null;
   should_prompt_check_in: boolean;
   record: AttendanceRecord | null;
