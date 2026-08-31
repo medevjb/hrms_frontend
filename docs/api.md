@@ -80,6 +80,7 @@ auth          /auth/login  /auth/logout  /auth/two-factor-challenge
 employees     /employees  /employees/{id}  /employees/{id}/status
               /employees/{id}/salary (financial-permission gated)
               /employees/{id}/documents  /employees/{id}/transfer
+              /employees/weekly-offs  (PATCH — bulk-assign weekend_day, employee.update)
 
 org           /departments  /teams  /teams/{id}/members
 
@@ -102,6 +103,11 @@ payroll       /payroll/settings  /payroll/periods  /payroll/runs  /payroll/entri
               /payroll/disputes  /payroll/disputes/{id}/resolve  /payroll/arrears
 
 settings      /settings/organization|payroll|overtime|leave-policies|late-penalty-rules
+              /settings/branding (GET, POST multipart: company_name, app_title, logo, favicon)
+              /settings/mail  /settings/mail/test  (SMTP config + test send; password write-only)
+
+branding      /branding  /branding/logo  /branding/favicon
+              (public, no session — the sign-in screen and browser tab)
 
 dashboard     /dashboard   (role-aware payload)
 
