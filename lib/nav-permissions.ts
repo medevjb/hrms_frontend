@@ -19,6 +19,9 @@ export const SECTION_PERMISSIONS: Record<string, PermissionName[]> = {
   "/announcements": ["announcement.view"],
   "/reports": ["report.view"],
   "/audit": ["audit.view"],
+  // The roles reference exposes the full permission map — admin-only, like
+  // System settings.
+  "/roles": ["settings.manage"],
   // System settings is admin-only — the caller needs at least one of the
   // configuration permissions. SystemSettingsPage gates each section
   // further. /account is intentionally absent: every user has one.
