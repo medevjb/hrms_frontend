@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { SendIcon } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
 import { FormStatus } from "@/components/ui/FormStatus";

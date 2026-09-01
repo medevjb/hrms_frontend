@@ -163,7 +163,7 @@ export function AppSidebar() {
                         tooltip={item.label}
                         className={`group relative flex h-9.5 items-center gap-3 rounded-xl px-3 text-xs font-medium transition-all duration-200 ${
                           active
-                            ? "bg-primary text-primary-foreground font-semibold shadow-xs shadow-primary/25 hover:bg-primary/90"
+                            ? "bg-primary! text-primary-foreground! font-semibold shadow-xs shadow-primary/25 hover:bg-primary/90!"
                             : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                         }`}
                       >
