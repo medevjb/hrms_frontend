@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { parseISO } from "date-fns";
 import { CheckCircle2Icon, ClockIcon, LogInIcon, LogOutIcon } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusChip, type StatusTone } from "@/components/ui/status-chip";

@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
-import { toast } from "sonner";
+import { ChevronLeftIcon, ChevronRightIcon, XIcon } from "lucide-react";
+import { toast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { DatePicker } from "@/components/ui/date-picker";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PageLoadingSkeleton } from "@/components/ui/PageLoadingSkeleton";
@@ -17,13 +18,14 @@ import {
 import { StatusChip, type StatusTone } from "@/components/ui/status-chip";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useCurrentUser } from "@/features/auth/CurrentUserContext";
+import { fmtDate } from "@/lib/people";
 import {
   useCancelLeaveRequest,
   useLeaveRequests,
   useLeaveTypes,
   type LeaveRequestFilters,
 } from "@/services/leave";
-import type { LeaveRequest, LeaveStatus } from "@/types/leave";
+import type { LeaveApprovalStage, LeaveRequest, LeaveStatus } from "@/types/leave";
 import { DecideLeaveRequestDialog, type DecideMode } from "./DecideLeaveRequestDialog";
 import { LeaveRequestDetailSheet } from "./LeaveRequestDetailSheet";
 
@@ -35,6 +37,24 @@ const STATUS_TONE: Record<LeaveStatus, StatusTone> = {
   HR_APPROVED: "success",
   REJECTED: "danger",
   CANCELLED: "neutral",
+};
+
+const STATUS_LABEL: Record<LeaveStatus, string> = {
+  DRAFT: "Draft",
+  SUBMITTED: "Submitted",
+  TEAM_LEADER_APPROVED: "TL approved",
+  OPERATION_MANAGER_APPROVED: "OM approved",
+  HR_APPROVED: "Approved",
+  REJECTED: "Rejected",
+  CANCELLED: "Cancelled",
+};
+
+const STAGE_LABEL: Record<LeaveApprovalStage, string> = {
+  TEAM_LEADER: "team leader",
+  OPERATION_MANAGER: "operation manager",
+  HR: "HR",
+  HEAD_HR: "Head of HR",
+  ADMIN: "admin",
 };
 
 const STATUS_OPTIONS: LeaveStatus[] = [
@@ -55,28 +75,52 @@ const CANCELLABLE: LeaveStatus[] = [
 
 function CancelButton({ leaveRequest }: { leaveRequest: LeaveRequest }) {
   const cancel = useCancelLeaveRequest(leaveRequest.id);
+  const [confirming, setConfirming] = useState(false);
 
   return (
-    <Button
-      variant="ghost"
-      size="sm"
-      disabled={cancel.isPending}
-      onClick={() =>
-        cancel.mutate(undefined, {
-          onSuccess: () => toast.success("Leave request cancelled"),
-          onError: () => toast.error("Cancel failed"),
-        })
-      }
-    >
-      Cancel
-    </Button>
+    <>
+      <Button
+        variant="ghost"
+        size="sm"
+        disabled={cancel.isPending}
+        onClick={() => setConfirming(true)}
+      >
+        Cancel
+      </Button>
+      <ConfirmDialog
+        open={confirming}
+        onOpenChange={setConfirming}
+        title="Cancel this leave request?"
+        description="The request is withdrawn and any held balance is released. This can't be undone."
+        confirmLabel="Cancel request"
+        destructive
+        onConfirm={async () => {
+          try {
+            await cancel.mutateAsync(undefined);
+            toast.success("Leave request cancelled");
+          } catch {
+            toast.error("Couldn't cancel the request — try again");
+          }
+        }}
+      />
+    </>
   );
+}
+
+function dateRange(request: LeaveRequest): string {
+  const start = fmtDate(request.start_date, "d MMM");
+  if (request.start_date === request.end_date) {
+    return request.is_half_day
+      ? `${start} · ${request.half_day_period === "FIRST_HALF" ? "1st half" : "2nd half"}`
+      : start;
+  }
+  return `${start} – ${fmtDate(request.end_date, "d MMM")}`;
 }
 
 export function LeaveRequestsList({ mode }: { mode: "mine" | "pending_approval" | "all" }) {
   const user = useCurrentUser();
   const canDirectApprove = user.permissions.includes("leave.override");
-  const showFilters = mode !== "mine";
+  const showStatusFilter = mode !== "pending_approval";
 
   const { data: leaveTypes } = useLeaveTypes();
 
@@ -86,13 +130,16 @@ export function LeaveRequestsList({ mode }: { mode: "mine" | "pending_approval" 
   const [dateFrom, setDateFrom] = useState<string | null>(null);
   const [dateTo, setDateTo] = useState<string | null>(null);
 
+  const hasActiveFilters =
+    status !== "all" || leaveTypeId !== "all" || dateFrom !== null || dateTo !== null;
+
   const filters: LeaveRequestFilters = {
     ...(mode === "mine" ? { mine: true } : {}),
     ...(mode === "pending_approval" ? { pending_my_approval: true } : {}),
-    ...(showFilters && status !== "all" ? { status } : {}),
-    ...(showFilters && leaveTypeId !== "all" ? { leave_type_id: Number(leaveTypeId) } : {}),
-    ...(showFilters && dateFrom ? { date_from: dateFrom } : {}),
-    ...(showFilters && dateTo ? { date_to: dateTo } : {}),
+    ...(showStatusFilter && status !== "all" ? { status } : {}),
+    ...(leaveTypeId !== "all" ? { leave_type_id: Number(leaveTypeId) } : {}),
+    ...(dateFrom ? { date_from: dateFrom } : {}),
+    ...(dateTo ? { date_to: dateTo } : {}),
     page,
   };
 
@@ -107,78 +154,97 @@ export function LeaveRequestsList({ mode }: { mode: "mine" | "pending_approval" 
     };
   }
 
+  function clearFilters() {
+    setPage(1);
+    setStatus("all");
+    setLeaveTypeId("all");
+    setDateFrom(null);
+    setDateTo(null);
+  }
+
+  const showEmployee = mode !== "mine";
+
   return (
     <>
-      {showFilters && (
-        <div className="mb-5 flex flex-wrap items-end gap-3 rounded-2xl border border-border/70 bg-card p-4 shadow-xs">
-          {mode === "all" && (
-            <div className="space-y-2">
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Status</p>
-              <Select value={status} onValueChange={resetPageAnd((v) => setStatus(v as LeaveStatus | "all"))}>
-                <SelectTrigger className="w-52">
-                  <SelectValue placeholder="All statuses" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All statuses</SelectItem>
-                  {STATUS_OPTIONS.map((option) => (
-                    <SelectItem key={option} value={option}>
-                      {option.replace(/_/g, " ")}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-          <div className="space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Leave type</p>
-            <Select value={leaveTypeId} onValueChange={resetPageAnd(setLeaveTypeId)}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="All types" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All types</SelectItem>
-                {(leaveTypes ?? []).map((type) => (
-                  <SelectItem key={type.id} value={String(type.id)}>
-                    {type.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">From date</p>
-            <DatePicker value={dateFrom} onChange={resetPageAnd(setDateFrom)} placeholder="Any date" />
-          </div>
-          <div className="space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">To date</p>
-            <DatePicker value={dateTo} onChange={resetPageAnd(setDateTo)} placeholder="Any date" />
-          </div>
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        {showStatusFilter && (
+          <Select value={status} onValueChange={resetPageAnd((v) => setStatus(v as LeaveStatus | "all"))}>
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="Any status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Any status</SelectItem>
+              {STATUS_OPTIONS.map((option) => (
+                <SelectItem key={option} value={option}>
+                  {STATUS_LABEL[option]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+
+        <Select value={leaveTypeId} onValueChange={resetPageAnd(setLeaveTypeId)}>
+          <SelectTrigger className="w-40">
+            <SelectValue placeholder="Any type" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Any type</SelectItem>
+            {(leaveTypes ?? []).map((type) => (
+              <SelectItem key={type.id} value={String(type.id)}>
+                {type.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <div className="w-36">
+          <DatePicker value={dateFrom} onChange={resetPageAnd(setDateFrom)} placeholder="From" />
         </div>
-      )}
+        <div className="w-36">
+          <DatePicker value={dateTo} onChange={resetPageAnd(setDateTo)} placeholder="To" />
+        </div>
+
+        {hasActiveFilters && (
+          <Button variant="ghost" size="sm" onClick={clearFilters}>
+            <XIcon />
+            Clear
+          </Button>
+        )}
+
+        {data && (
+          <span className="ml-auto text-xs text-muted-foreground">
+            {data.meta.total} request{data.meta.total === 1 ? "" : "s"}
+          </span>
+        )}
+      </div>
 
       {isLoading ? (
         <PageLoadingSkeleton />
       ) : !data || data.data.length === 0 ? (
         <EmptyState
-          title="No leave requests"
+          title={hasActiveFilters ? "No matching requests" : "No leave requests"}
           description={
-            mode === "pending_approval"
-              ? "Nothing is waiting on you right now."
-              : "Nothing matches these filters yet."
+            hasActiveFilters
+              ? "Nothing matches these filters. Try clearing them."
+              : mode === "pending_approval"
+                ? "Nothing is waiting on you right now."
+                : mode === "mine"
+                  ? "You haven't requested any time off yet."
+                  : "No one has requested leave yet."
           }
         />
       ) : (
         <>
-          <div className="overflow-hidden rounded-xl border border-border">
+          <div className="overflow-x-auto rounded-xl border border-border">
             <Table>
               <TableHeader>
                 <TableRow>
-                  {mode !== "mine" && <TableHead>Employee</TableHead>}
+                  {showEmployee && <TableHead>Employee</TableHead>}
                   <TableHead>Type</TableHead>
                   <TableHead>Dates</TableHead>
-                  <TableHead>Days</TableHead>
+                  <TableHead className="text-right">Days</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Stage</TableHead>
+                  <TableHead>Submitted</TableHead>
                   <TableHead />
                 </TableRow>
               </TableHeader>
@@ -189,7 +255,7 @@ export function LeaveRequestsList({ mode }: { mode: "mine" | "pending_approval" 
                     className="cursor-pointer"
                     onClick={() => setViewing(request)}
                   >
-                    {mode !== "mine" && (
+                    {showEmployee && (
                       <TableCell>
                         <div className="font-medium">{request.employee.full_name}</div>
                         <div className="font-mono text-xs text-muted-foreground">
@@ -197,30 +263,26 @@ export function LeaveRequestsList({ mode }: { mode: "mine" | "pending_approval" 
                         </div>
                       </TableCell>
                     )}
-                    <TableCell>{request.leave_type.name}</TableCell>
-                    <TableCell className="font-mono text-sm">
-                      {request.start_date}
-                      {request.start_date !== request.end_date ? ` – ${request.end_date}` : ""}
-                      {request.is_half_day && (
-                        <span className="ml-1 text-xs text-muted-foreground">
-                          ({request.half_day_period === "FIRST_HALF" ? "1st half" : "2nd half"})
-                        </span>
-                      )}
+                    <TableCell className="font-medium">{request.leave_type.name}</TableCell>
+                    <TableCell className="text-sm whitespace-nowrap">{dateRange(request)}</TableCell>
+                    <TableCell className="text-right font-mono text-sm">
+                      {request.days_requested}
                     </TableCell>
-                    <TableCell className="font-mono text-sm">{request.days_requested}</TableCell>
                     <TableCell>
                       <StatusChip tone={STATUS_TONE[request.status]}>
-                        {request.status.replace(/_/g, " ")}
+                        {STATUS_LABEL[request.status]}
                       </StatusChip>
+                      {request.current_stage && (
+                        <div className="mt-0.5 text-[11px] text-muted-foreground">
+                          waiting on {STAGE_LABEL[request.current_stage]}
+                        </div>
+                      )}
                     </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {request.current_stage ? request.current_stage.replace(/_/g, " ") : "—"}
+                    <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                      {request.submitted_at ? fmtDate(request.submitted_at, "d MMM yyyy") : "—"}
                     </TableCell>
                     <TableCell onClick={(event) => event.stopPropagation()}>
                       <div className="flex justify-end gap-1">
-                        <Button variant="ghost" size="sm" onClick={() => setViewing(request)}>
-                          View
-                        </Button>
                         {mode === "pending_approval" && (
                           <>
                             <Button

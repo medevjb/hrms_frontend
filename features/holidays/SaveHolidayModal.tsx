@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { AlertCircleIcon } from "lucide-react";
+import { AlertCircleIcon, InfoIcon } from "lucide-react";
 import { z } from "zod";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -134,6 +134,15 @@ function HolidayForm({
         <DialogTitle>{isEdit ? "Edit holiday" : "New holiday"}</DialogTitle>
       </DialogHeader>
       <form onSubmit={handleSubmit} className="space-y-4">
+        {isEdit && holiday?.source === "GOOGLE_BD" && (
+          <Alert>
+            <InfoIcon />
+            <AlertDescription>
+              This holiday syncs from Google&rsquo;s Bangladesh calendar. Its name and date may be
+              refreshed on the next sync; the type and active status you set here are kept.
+            </AlertDescription>
+          </Alert>
+        )}
         {error && (
           <Alert variant="destructive">
             <AlertCircleIcon />
