@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { browserFetch } from "@/lib/browser-api";
 import type { PaginationMeta } from "@/types/api";
 import type {
+  BulkLeaveBalanceMode,
   HalfDayPeriod,
   LeaveBalance,
   LeaveRequest,
@@ -76,6 +77,31 @@ export function useAdjustLeaveBalance(id: number) {
   return useMutation({
     mutationFn: (input: { amount: number; note: string }) =>
       browserFetch<LeaveBalance>(`/leave-balances/${id}/adjust`, { method: "PATCH", body: input }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["leave-balances"] }),
+  });
+}
+
+export type BulkAdjustLeaveBalanceInput = {
+  leave_type_id: number;
+  mode: BulkLeaveBalanceMode;
+  amount?: number;
+  note: string;
+};
+
+/**
+ * Org-wide balance operation — grant/set/reset one leave type for every
+ * active employee at once. Backend gates this on leave.policy.manage
+ * (Admin / Head of HR only).
+ */
+export function useBulkAdjustLeaveBalances() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: BulkAdjustLeaveBalanceInput) =>
+      browserFetch<{ affected: number }>("/leave-balances/bulk-adjust", {
+        method: "POST",
+        body: input,
+      }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["leave-balances"] }),
   });
 }

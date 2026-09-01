@@ -25,7 +25,13 @@ export type LeaveBalance = {
   leave_type: { id: number; name: string; code: string };
   leave_year: number;
   balance: number;
+  // entitlement = the leave type's annual allocation; taken is approximate
+  // (entitlement − balance), matching the dashboard widget.
+  entitlement: number;
+  taken: number;
 };
+
+export type BulkLeaveBalanceMode = "GRANT" | "SET" | "REAPPLY_DEFAULT";
 
 export type LeaveStatus =
   | "DRAFT"

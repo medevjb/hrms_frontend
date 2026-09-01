@@ -2,6 +2,10 @@
 
 export type HolidayType = "NATIONAL" | "RELIGIOUS" | "COMPANY" | "OTHER";
 
+// MANUAL — added by hand; GOOGLE_BD — pulled from Google's public
+// "Holidays in Bangladesh" calendar by the holidays:import-bd importer.
+export type HolidaySource = "MANUAL" | "GOOGLE_BD";
+
 export type Holiday = {
   id: number;
   title: string;
@@ -10,6 +14,15 @@ export type Holiday = {
   description: string | null;
   office_location: string | null;
   active: boolean;
+  source: HolidaySource;
+  synced_at: string | null;
+};
+
+// Result of POST /holidays/import.
+export type HolidayImportResult = {
+  created: number;
+  updated: number;
+  skipped: number;
 };
 
 // Mirrors backend/app/Http/Resources/Api/V1/HolidayNoticeResource.php and

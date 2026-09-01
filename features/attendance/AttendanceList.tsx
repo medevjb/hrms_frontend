@@ -5,7 +5,6 @@ import { PencilIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DatePicker } from "@/components/ui/date-picker";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { PageHeader } from "@/components/ui/PageHeader";
 import { PageLoadingSkeleton } from "@/components/ui/PageLoadingSkeleton";
 import {
   Select,
@@ -61,11 +60,6 @@ export function AttendanceList() {
 
   return (
     <>
-      <PageHeader
-        title="Attendance"
-        description="Everyone's attendance within your visibility — filter by date, status, or team."
-      />
-
       <div className="mb-5 flex flex-wrap items-end gap-3 rounded-2xl border border-border/70 bg-card p-4 shadow-xs">
         <div className="space-y-2">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">From date</p>

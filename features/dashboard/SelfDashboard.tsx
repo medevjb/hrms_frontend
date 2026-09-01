@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/toast";
 import { startOfMonth, endOfMonth, format, parseISO } from "date-fns";
 import { useCurrentUser } from "@/features/auth/CurrentUserContext";
 import { useProfile } from "@/services/profile";
@@ -10,7 +10,7 @@ import {
   useAttendanceToday,
   useCheckIn,
   useCheckOut,
-  useSelfAttendanceMonth,
+  useAttendanceMonth,
 } from "@/services/attendance";
 import { ApiError } from "@/lib/api-error";
 import { formatTimeInTimezone } from "@/lib/format-time";
@@ -75,7 +75,7 @@ export function SelfDashboard() {
   const monthFrom = format(startOfMonth(activeMonth), "yyyy-MM-dd");
   const monthTo = format(endOfMonth(activeMonth), "yyyy-MM-dd");
   const employeeId = profile?.employee?.id;
-  const { data: monthRecords, isLoading: monthLoading } = useSelfAttendanceMonth(
+  const { data: monthRecords, isLoading: monthLoading } = useAttendanceMonth(
     employeeId,
     monthFrom,
     monthTo,
