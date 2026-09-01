@@ -14,9 +14,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { SettingsCard } from "@/components/ui/SettingsCard";
 import { ApiError } from "@/lib/api-error";
+import { LeaveTypesManager } from "@/features/leave/LeaveTypesManager";
 import { useLeaveSettings, useUpdateLeaveSettings } from "@/services/settings";
 import type { LeaveSettings } from "@/types/settings";
+import { BulkLeaveBalanceCard } from "./BulkLeaveBalanceCard";
 
 const MONTHS = [
   "January", "February", "March", "April", "May", "June",
@@ -106,5 +109,23 @@ export function LeaveSettingsTab() {
 
   if (isLoading || !data) return <PageLoadingSkeleton />;
 
-  return <Form initial={data} />;
+  return (
+    <div className="space-y-6">
+      <SettingsCard
+        title="Leave year"
+        description="When the leave year starts and how much unused balance can carry into the next one."
+      >
+        <Form initial={data} />
+      </SettingsCard>
+
+      <SettingsCard
+        title="Leave categories"
+        description="The catalogue every employee picks from when requesting time off — each type's default annual allocation, accrual, half-day and carry-forward rules."
+      >
+        <LeaveTypesManager />
+      </SettingsCard>
+
+      <BulkLeaveBalanceCard />
+    </div>
+  );
 }

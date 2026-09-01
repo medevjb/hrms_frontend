@@ -43,6 +43,9 @@ export function ConfirmDialog({
     try {
       await onConfirm();
       onOpenChange(false);
+    } catch {
+      // onConfirm rejected — keep the dialog open so the action can be
+      // retried. The caller is responsible for surfacing the error.
     } finally {
       setPending(false);
     }
@@ -60,7 +63,7 @@ export function ConfirmDialog({
           <AlertDialogAction
             onClick={handleConfirm}
             disabled={pending}
-            className={destructive ? "bg-destructive/90 text-white hover:bg-destructive" : undefined}
+            variant={destructive ? "destructive" : "default"}
           >
             {pending ? "Working…" : confirmLabel}
           </AlertDialogAction>

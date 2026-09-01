@@ -4,13 +4,20 @@ import { useState, useEffect } from "react";
 import { CalendarDaysIcon, ClockIcon } from "lucide-react";
 import { useCurrentUser } from "@/features/auth/CurrentUserContext";
 
+// The header clock is a leadership convenience (payroll cut-offs, approval
+// deadlines) — everyone else just needs their own attendance times.
+const CLOCK_ROLES = ["Admin", "Head of HR"];
+
 export function HeaderLiveDateTime() {
   const user = useCurrentUser();
+  const canSeeClock = user.roles.some((role) => CLOCK_ROLES.includes(role));
   const timezone = user.organization?.timezone || "Asia/Dhaka";
   const [timeStr, setTimeStr] = useState<string>("");
   const [dateStr, setDateStr] = useState<string>("");
 
   useEffect(() => {
+    if (!canSeeClock) return;
+
     const update = () => {
       try {
         const now = new Date();
@@ -39,7 +46,11 @@ export function HeaderLiveDateTime() {
     update();
     const interval = setInterval(update, 1000);
     return () => clearInterval(interval);
-  }, [timezone]);
+  }, [timezone, canSeeClock]);
+
+  if (!canSeeClock) {
+    return null;
+  }
 
   return (
     <div className="hidden lg:flex items-center gap-2 rounded-full border border-border/70 bg-muted/40 px-3 py-1.5 text-xs font-semibold text-muted-foreground shadow-xs">

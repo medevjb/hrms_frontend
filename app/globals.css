@@ -136,3 +136,13 @@
     @apply font-sans;
     }
 }
+
+/* Toast auto-dismiss progress bar (components/ui/toast.tsx). */
+@keyframes toast-progress {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}

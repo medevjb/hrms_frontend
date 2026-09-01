@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { AlertCircleIcon, Trash2Icon } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   AlertDialog,
