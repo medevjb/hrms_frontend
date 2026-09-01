@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { CameraIcon, MailIcon, PhoneIcon, Trash2Icon } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/toast";
 import { z } from "zod";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
