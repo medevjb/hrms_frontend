@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { startOfMonth, endOfMonth, format } from "date-fns";
+import { startOfMonth, endOfMonth, format, parseISO } from "date-fns";
 import { useCurrentUser } from "@/features/auth/CurrentUserContext";
 import { useProfile } from "@/services/profile";
 import { useDashboard } from "@/services/dashboard";
@@ -64,9 +64,16 @@ export function SelfDashboard() {
   const { data: dashboard } = useDashboard();
   const { data: today } = useAttendanceToday();
 
-  const [visibleMonth, setVisibleMonth] = useState<Date>(() => new Date());
-  const monthFrom = format(startOfMonth(visibleMonth), "yyyy-MM-dd");
-  const monthTo = format(endOfMonth(visibleMonth), "yyyy-MM-dd");
+  // The org's current date, resolved server-side in the org timezone
+  // (docs/PRD.md §142) — the browser clock may be a day off and would hide
+  // a day the employee has already worked. Falls back to the browser date
+  // only until /attendance/today lands.
+  const orgTodayKey = today?.work_date ?? format(new Date(), "yyyy-MM-dd");
+
+  const [visibleMonth, setVisibleMonth] = useState<Date | null>(null);
+  const activeMonth = visibleMonth ?? parseISO(orgTodayKey);
+  const monthFrom = format(startOfMonth(activeMonth), "yyyy-MM-dd");
+  const monthTo = format(endOfMonth(activeMonth), "yyyy-MM-dd");
   const employeeId = profile?.employee?.id;
   const { data: monthRecords, isLoading: monthLoading } = useSelfAttendanceMonth(
     employeeId,
@@ -202,13 +209,14 @@ export function SelfDashboard() {
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-12">
         <div className="xl:col-span-7 2xl:col-span-8">
           <AttendanceCalendarCard
-            visibleMonth={visibleMonth}
+            visibleMonth={activeMonth}
             onVisibleMonthChange={setVisibleMonth}
             records={calendarRecords}
             isLoading={monthLoading}
             holidays={holidays}
             weekendDays={me?.weekend_days}
             joiningDate={profile?.employee?.joining_date}
+            todayKey={orgTodayKey}
             onRequestCorrection={handleDayCorrection}
           />
         </div>
@@ -219,7 +227,7 @@ export function SelfDashboard() {
               day: "2-digit",
               month: "short",
               weekday: "long",
-            }).format(new Date())}
+            }).format(parseISO(orgTodayKey))}
             isWorkDay={today?.is_work_day ?? true}
             nonWorkReason={
               today?.is_holiday ? "Public holiday" : today?.is_weekend ? "Weekly off" : null

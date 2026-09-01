@@ -85,6 +85,9 @@ export type LeaveRequestFilters = {
   pending_my_approval?: boolean;
   status?: LeaveStatus;
   employee_id?: number;
+  leave_type_id?: number;
+  date_from?: string;
+  date_to?: string;
   page?: number;
 };
 
@@ -96,6 +99,9 @@ function buildQuery(filters: LeaveRequestFilters): string {
   if (filters.pending_my_approval) params.set("filter[pending_my_approval]", "1");
   if (filters.status) params.set("filter[status]", filters.status);
   if (filters.employee_id) params.set("filter[employee_id]", String(filters.employee_id));
+  if (filters.leave_type_id) params.set("filter[leave_type_id]", String(filters.leave_type_id));
+  if (filters.date_from) params.set("filter[date_from]", filters.date_from);
+  if (filters.date_to) params.set("filter[date_to]", filters.date_to);
   if (filters.page) params.set("page", String(filters.page));
   const query = params.toString();
   return query ? `?${query}` : "";
@@ -111,6 +117,14 @@ export function useLeaveRequests(filters: LeaveRequestFilters = {}) {
       if (!response.ok) throw new Error("Failed to load leave requests");
       return (await response.json()) as LeaveRequestListResult;
     },
+  });
+}
+
+export function useLeaveRequest(id: number | null) {
+  return useQuery({
+    queryKey: ["leave-requests", "detail", id],
+    queryFn: () => browserFetch<LeaveRequest>(`/leave-requests/${id}`),
+    enabled: id !== null,
   });
 }
 

@@ -5,7 +5,6 @@ import {
   endOfWeek,
   eachDayOfInterval,
   isSameMonth,
-  isToday,
   format,
   differenceInMonths,
   differenceInDays,
@@ -90,6 +89,11 @@ function labelFor(status: CalendarDayStatus): string | undefined {
  * A past work day with no record is `NO_RECORD` (never an invented Present
  * or Absent); future days are `FUTURE`; weekends with no record fall back
  * to `OFF`. Stats are counted from what's actually there.
+ *
+ * `todayKey` is the organization's current date (`YYYY-MM-DD`), resolved
+ * server-side in the org timezone — never the browser's clock, which can
+ * disagree by a day and hide a day the employee has already worked. When
+ * absent (payload still loading) it falls back to the browser date.
  */
 const WEEKDAY_NAMES = [
   "sunday",
@@ -107,6 +111,7 @@ export function generateMonthCalendarDays(
   holidays?: Array<{ date: string; title: string }>,
   weekendDays?: string[],
   joiningDate?: string | null,
+  todayKey: string = format(new Date(), "yyyy-MM-dd"),
 ): {
   days: CalendarDayItem[];
   stats: {
@@ -157,9 +162,6 @@ export function generateMonthCalendarDays(
     noRecord: 0,
   };
 
-  const startOfToday = new Date();
-  startOfToday.setHours(0, 0, 0, 0);
-
   // Days before the employee joined aren't part of their record at all.
   const joined = joiningDate ? parseISO(joiningDate) : null;
 
@@ -196,7 +198,7 @@ export function generateMonthCalendarDays(
       note = holidayTitle;
     } else if (isWeekend) {
       status = "OFF";
-    } else if (date >= startOfToday) {
+    } else if (dateKey > todayKey) {
       status = "FUTURE";
     } else {
       status = "NO_RECORD";
@@ -226,7 +228,7 @@ export function generateMonthCalendarDays(
       shiftName,
       note,
       isCurrentMonth: isCurMonth,
-      isToday: isToday(date),
+      isToday: dateKey === todayKey,
     });
   }
 
