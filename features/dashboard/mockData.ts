@@ -26,7 +26,7 @@ export type CalendarDayItem = {
   lateMinutes?: number | null;
   shiftName?: string;
   note?: string;
-  isCurrentMonth: boolean;
+  isInPeriod: boolean;
   isToday?: boolean;
 };
 

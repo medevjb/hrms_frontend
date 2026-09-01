@@ -2,19 +2,16 @@
 
 import { useMemo } from "react";
 import {
-  addMonths,
   eachDayOfInterval,
-  endOfMonth,
   endOfWeek,
   format,
-  isSameMonth,
   isToday,
-  startOfMonth,
+  parseISO,
   startOfWeek,
-  subMonths,
 } from "date-fns";
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import type { ReportingPeriod } from "@/lib/reporting-period";
 import { cn } from "@/lib/utils";
 
 export type CalendarChip = {
@@ -30,8 +27,12 @@ export type CalendarChip = {
 };
 
 type Props = {
-  month: Date;
-  onMonthChange: (month: Date) => void;
+  /** The reporting period in view (docs/PRD.md §85). */
+  period: ReportingPeriod;
+  isCurrentPeriod: boolean;
+  onPrevPeriod: () => void;
+  onNextPeriod: () => void;
+  onJumpToCurrent: () => void;
   chipsForDate: (iso: string) => CalendarChip[];
   onDayClick?: (iso: string) => void;
   /** Rendered on the right of the month header. */
@@ -46,30 +47,42 @@ const MAX_CHIPS_PER_DAY = 3;
  * events as inline chips. Shared by the holiday calendar and the personal
  * "My events" calendar so the two look and behave identically.
  */
-export function MonthCalendar({ month, onMonthChange, chipsForDate, onDayClick, actions }: Props) {
+export function MonthCalendar({
+  period,
+  isCurrentPeriod,
+  onPrevPeriod,
+  onNextPeriod,
+  onJumpToCurrent,
+  chipsForDate,
+  onDayClick,
+  actions,
+}: Props) {
   const weeks = useMemo(() => {
     const days = eachDayOfInterval({
-      start: startOfWeek(startOfMonth(month)),
-      end: endOfWeek(endOfMonth(month)),
+      start: startOfWeek(parseISO(period.startDate)),
+      end: endOfWeek(parseISO(period.endDate)),
     });
     const chunks: Date[][] = [];
     for (let i = 0; i < days.length; i += 7) {
       chunks.push(days.slice(i, i + 7));
     }
     return chunks;
-  }, [month]);
+  }, [period.startDate, period.endDate]);
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-1">
-          <h2 className="font-heading text-lg font-bold text-foreground">
-            {format(month, "MMMM yyyy")}
+          <h2
+            className="font-heading text-lg font-bold text-foreground"
+            title={`${period.startDate} → ${period.endDate}`}
+          >
+            {period.label}
           </h2>
           <Button
             variant="ghost"
             size="icon-sm"
-            onClick={() => onMonthChange(subMonths(month, 1))}
+            onClick={onPrevPeriod}
             aria-label="Previous month"
           >
             <ChevronLeftIcon />
@@ -77,14 +90,16 @@ export function MonthCalendar({ month, onMonthChange, chipsForDate, onDayClick, 
           <Button
             variant="ghost"
             size="icon-sm"
-            onClick={() => onMonthChange(addMonths(month, 1))}
+            onClick={onNextPeriod}
             aria-label="Next month"
           >
             <ChevronRightIcon />
           </Button>
-          <Button variant="ghost" size="sm" onClick={() => onMonthChange(new Date())}>
-            Today
-          </Button>
+          {!isCurrentPeriod && (
+            <Button variant="ghost" size="sm" onClick={onJumpToCurrent}>
+              Today
+            </Button>
+          )}
         </div>
         {actions}
       </div>
@@ -107,7 +122,7 @@ export function MonthCalendar({ month, onMonthChange, chipsForDate, onDayClick, 
               {week.map((day) => {
                 const iso = format(day, "yyyy-MM-dd");
                 const chips = chipsForDate(iso);
-                const outside = !isSameMonth(day, month);
+                const outside = iso < period.startDate || iso > period.endDate;
                 const today = isToday(day);
 
                 return (

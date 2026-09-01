@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useCurrentUser } from "@/features/auth/CurrentUserContext";
+import { useReportingPeriod } from "@/hooks/use-reporting-period";
 import { useDepartments } from "@/services/departments";
 import { reportExportUrl, useReport, useReportTypes } from "@/services/reports";
 import type { ReportFilters, ReportType } from "@/types/reports";
@@ -26,6 +27,7 @@ export function ReportsPage() {
   const canExport = user.permissions.includes("report.export");
   const { data: types } = useReportTypes();
   const { data: departments } = useDepartments();
+  const { period } = useReportingPeriod();
 
   const [type, setType] = useState<ReportType | null>(null);
   const [dateFrom, setDateFrom] = useState<string | null>(null);
@@ -79,7 +81,12 @@ export function ReportsPage() {
 
           {!selectedInfo?.uses_payroll_period && (
             <>
-              <FormField label="From Date">
+              <FormField
+                label="From Date"
+                description={
+                  !dateFrom && !dateTo ? `Defaults to ${period.label} (${period.startDate} → ${period.endDate})` : undefined
+                }
+              >
                 <DatePicker value={dateFrom} onChange={setDateFrom} />
               </FormField>
               <FormField label="To Date">

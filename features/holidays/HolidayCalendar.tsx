@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { PageLoadingSkeleton } from "@/components/ui/PageLoadingSkeleton";
 import { MonthCalendar, type CalendarChip } from "@/features/calendar/MonthCalendar";
 import { datesInRange } from "@/features/calendar/utils";
+import { useReportingPeriod } from "@/hooks/use-reporting-period";
 import { useCurrentUser } from "@/features/auth/CurrentUserContext";
 import { PERSONAL_EVENT_CHIP, PERSONAL_EVENT_DOT } from "@/features/personal-events/constants";
 import { SavePersonalEventModal } from "@/features/personal-events/SavePersonalEventModal";
@@ -26,7 +27,7 @@ export function HolidayCalendar() {
   const { data: holidays, isLoading } = useHolidays();
   const { data: personalEvents } = usePersonalEvents();
 
-  const [month, setMonth] = useState<Date>(() => new Date());
+  const { period, isCurrent, goPrev, goNext, goToCurrent } = useReportingPeriod();
 
   const [holidayOpen, setHolidayOpen] = useState(false);
   const [editingHoliday, setEditingHoliday] = useState<Holiday | undefined>(undefined);
@@ -109,8 +110,11 @@ export function HolidayCalendar() {
     <Card>
       <CardContent className="space-y-4">
         <MonthCalendar
-          month={month}
-          onMonthChange={setMonth}
+          period={period}
+          isCurrentPeriod={isCurrent}
+          onPrevPeriod={goPrev}
+          onNextPeriod={goNext}
+          onJumpToCurrent={goToCurrent}
           chipsForDate={chipsForDate}
           onDayClick={canManage ? addHoliday : undefined}
           actions={

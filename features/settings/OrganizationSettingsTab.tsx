@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
 import { FormStatus } from "@/components/ui/FormStatus";
@@ -23,6 +24,7 @@ function titleCase(value: string): string {
 }
 
 function Form({ initial }: { initial: OrganizationSettingsData }) {
+  const router = useRouter();
   const update = useUpdateOrganizationSettings();
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -32,6 +34,7 @@ function Form({ initial }: { initial: OrganizationSettingsData }) {
     currency: initial.currency,
     currency_decimal_places: initial.currency_decimal_places,
     default_weekend_day: initial.default_weekend_day,
+    reporting_month_cutoff_day: initial.reporting_month_cutoff_day,
   });
 
   async function handleSubmit(event: React.FormEvent) {
@@ -42,6 +45,10 @@ function Form({ initial }: { initial: OrganizationSettingsData }) {
     try {
       await update.mutateAsync(values);
       setSaved(true);
+      // timezone / reporting-month ride on the SSR session payload
+      // (`user.organization`); re-run the layout so every open surface
+      // picks up the new boundaries without a hard reload.
+      router.refresh();
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.message : "Something went wrong. Please try again.");
     }
@@ -113,6 +120,31 @@ function Form({ initial }: { initial: OrganizationSettingsData }) {
           </SelectContent>
         </Select>
       </FormField>
+      <FormField
+        label="Reporting month cut-off day"
+        htmlFor="reporting_month_cutoff_day"
+        description="Day 1–28, or blank for standard calendar months. Set to 25 and the reporting month runs from the 26th of one month to the 25th of the next, named after the month it ends in. Applies everywhere — every calendar, dashboard, report, and the payroll period."
+      >
+        <Input
+          id="reporting_month_cutoff_day"
+          type="number"
+          min={1}
+          max={28}
+          className="w-56"
+          value={values.reporting_month_cutoff_day ?? ""}
+          onChange={(e) =>
+            setValues((v) => ({
+              ...v,
+              reporting_month_cutoff_day: e.target.value === "" ? null : Number(e.target.value),
+            }))
+          }
+        />
+      </FormField>
+      <p className="text-xs text-muted-foreground">
+        Current reporting month:{" "}
+        <span className="font-medium text-foreground">{initial.reporting_period.label}</span> (
+        {initial.reporting_period.start_date} → {initial.reporting_period.end_date})
+      </p>
       <Button type="submit" disabled={update.isPending}>
         {update.isPending ? "Saving…" : "Save changes"}
       </Button>

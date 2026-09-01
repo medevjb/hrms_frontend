@@ -1,8 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { addMonths, endOfMonth, format, parseISO, startOfMonth, subMonths } from "date-fns";
+import { format } from "date-fns";
 import { toast } from "@/components/ui/toast";
+import { useReportingPeriod } from "@/hooks/use-reporting-period";
 import { useCurrentUser } from "@/features/auth/CurrentUserContext";
 import { AttendanceCalendarCard } from "@/features/dashboard/components/AttendanceCalendarCard";
 import type { CalendarDayItem } from "@/features/dashboard/mockData";
@@ -42,17 +43,17 @@ export function AttendanceCalendarView() {
   const { data: holidays } = useHolidays();
 
   const [pickedId, setPickedId] = useState<string | null>(null);
-  const [visibleMonth, setVisibleMonth] = useState<Date | null>(null);
   const [correctionRecord, setCorrectionRecord] = useState<AttendanceRecord | null>(null);
+
+  const { period, isCurrent, goPrev, goNext, goToCurrent } = useReportingPeriod();
 
   const ownId = profile?.employee?.id;
   const targetId = pickedId ? Number(pickedId) : ownId;
   const viewingSelf = targetId === ownId;
 
   const orgTodayKey = today?.work_date ?? format(new Date(), "yyyy-MM-dd");
-  const activeMonth = visibleMonth ?? parseISO(orgTodayKey);
-  const monthFrom = format(startOfMonth(activeMonth), "yyyy-MM-dd");
-  const monthTo = format(endOfMonth(activeMonth), "yyyy-MM-dd");
+  const monthFrom = period.startDate;
+  const monthTo = period.endDate;
 
   const { data: monthRecords, isLoading } = useAttendanceMonth(targetId, monthFrom, monthTo);
 
@@ -112,8 +113,11 @@ export function AttendanceCalendarView() {
       <div className="grid gap-4 xl:grid-cols-12">
         <div className="xl:col-span-8">
           <AttendanceCalendarCard
-            visibleMonth={activeMonth}
-            onVisibleMonthChange={setVisibleMonth}
+            period={period}
+            isCurrentPeriod={isCurrent}
+            onPrevPeriod={goPrev}
+            onNextPeriod={goNext}
+            onJumpToCurrent={goToCurrent}
             records={calendarRecords}
             isLoading={isLoading}
             holidays={holidayList}
@@ -126,15 +130,15 @@ export function AttendanceCalendarView() {
 
         <div className="xl:col-span-4">
           <AttendanceMonthList
-            month={activeMonth}
+            title={period.label}
             records={monthList}
             timezone={timezone}
             todayKey={orgTodayKey}
             isLoading={isLoading}
             canCorrect={canCorrect}
             onCorrect={setCorrectionRecord}
-            onPrevMonth={() => setVisibleMonth(subMonths(activeMonth, 1))}
-            onNextMonth={() => setVisibleMonth(addMonths(activeMonth, 1))}
+            onPrevMonth={goPrev}
+            onNextMonth={goNext}
           />
         </div>
       </div>

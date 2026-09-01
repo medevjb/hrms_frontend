@@ -23,6 +23,7 @@ import { useDeletePersonalEvent, usePersonalEvents } from "@/services/personal-e
 import type { PersonalEvent } from "@/types/personal-events";
 import { MonthCalendar, type CalendarChip } from "@/features/calendar/MonthCalendar";
 import { datesInRange } from "@/features/calendar/utils";
+import { useReportingPeriod } from "@/hooks/use-reporting-period";
 import { PERSONAL_EVENT_CHIP, PERSONAL_EVENT_DOT } from "./constants";
 import { SavePersonalEventModal } from "./SavePersonalEventModal";
 
@@ -39,7 +40,7 @@ export function PersonalEventsTab() {
   const { data: events, isLoading } = usePersonalEvents();
   const deleteEvent = useDeletePersonalEvent();
 
-  const [month, setMonth] = useState<Date>(() => new Date());
+  const { period, isCurrent, goPrev, goNext, goToCurrent } = useReportingPeriod();
   const [opened, setOpened] = useState(false);
   const [editing, setEditing] = useState<PersonalEvent | undefined>(undefined);
   const [range, setRange] = useState<{ start: string; end: string } | null>(null);
@@ -110,8 +111,11 @@ export function PersonalEventsTab() {
       <Card>
         <CardContent>
           <MonthCalendar
-            month={month}
-            onMonthChange={setMonth}
+            period={period}
+            isCurrentPeriod={isCurrent}
+            onPrevPeriod={goPrev}
+            onNextPeriod={goNext}
+            onJumpToCurrent={goToCurrent}
             chipsForDate={chipsForDate}
             onDayClick={(iso) => openNew(iso)}
             actions={

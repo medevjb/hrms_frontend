@@ -2,6 +2,10 @@
 // differently-gated slices of the one OrganizationSettings singleton
 // (docs/PRD.md §139.6).
 
+import type { ReportingPeriodPayload } from "@/types/auth";
+
+export type { ReportingPeriodPayload };
+
 export type OrganizationSettingsData = {
   company_name: string;
   app_title: string | null;
@@ -15,6 +19,12 @@ export type OrganizationSettingsData = {
   // §85 — the one organization-wide weekly off day, overridable per employee.
   default_weekend_day: Weekday;
   default_shift_id: number | null;
+  // §85 — custom reporting month. null → calendar months; 1–28 → reporting
+  // month M runs day (cutoff+1) of M-1 through `cutoff` of M.
+  reporting_month_cutoff_day: number | null;
+  // The period that cutoff resolves to right now, computed server-side in
+  // the org timezone — first paint needs no client math.
+  reporting_period: ReportingPeriodPayload;
 };
 
 export type Weekday =
