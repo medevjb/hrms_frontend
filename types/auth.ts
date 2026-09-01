@@ -80,5 +80,17 @@ export type CurrentUser = {
     name: string;
     app_title: string;
     logo_url: string | null;
+    // §85 — the custom reporting month, resolved server-side. Rides on
+    // every session so calendars/dashboards render the same "this month"
+    // as payroll without holding settings.manage.
+    reporting_month_cutoff_day: number | null;
+    reporting_period: ReportingPeriodPayload;
   };
+};
+
+export type ReportingPeriodPayload = {
+  key: string;
+  label: string;
+  start_date: string;
+  end_date: string;
 };
