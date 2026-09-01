@@ -75,18 +75,20 @@ export function useAttendanceList(filters: AttendanceFilters = {}) {
 }
 
 /**
- * One employee's attendance records for a single month, for the self
- * dashboard calendar. `per_page` is lifted well past a month's worth of
- * rows so the calendar never renders a partial month. `enabled` gates the
- * call until the caller's own employee id is known.
+ * One employee's attendance records for a single month — the calendar
+ * view on the dashboard and the Attendance page. `per_page` is lifted
+ * well past a month's worth of rows so the calendar never renders a
+ * partial month. `enabled` gates the call until an employee id is known.
+ * The backend scopes the employee_id filter, so a manager only gets a
+ * month back for someone in their visibility.
  */
-export function useSelfAttendanceMonth(
+export function useAttendanceMonth(
   employeeId: number | undefined,
   dateFrom: string,
   dateTo: string,
 ) {
   return useQuery({
-    queryKey: ["attendance", "self-month", employeeId, dateFrom, dateTo],
+    queryKey: ["attendance", "month", employeeId, dateFrom, dateTo],
     enabled: Number.isFinite(employeeId),
     queryFn: async () => {
       const params = new URLSearchParams({

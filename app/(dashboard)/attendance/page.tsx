@@ -1,5 +1,5 @@
-import { AttendanceList } from "@/features/attendance/AttendanceList";
+import { AttendancePage } from "@/features/attendance/AttendancePage";
 
-export default function AttendancePage() {
-  return <AttendanceList />;
+export default function Attendance() {
+  return <AttendancePage />;
 }

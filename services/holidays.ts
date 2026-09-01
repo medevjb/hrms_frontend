@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { browserFetch } from "@/lib/browser-api";
-import type { Holiday, HolidayType } from "@/types/holidays";
+import type { Holiday, HolidayImportResult, HolidayType } from "@/types/holidays";
 
 export function useHolidays() {
   return useQuery({
@@ -24,6 +24,22 @@ export function useCreateHoliday() {
   return useMutation({
     mutationFn: (input: SaveHolidayInput) =>
       browserFetch<Holiday>("/holidays", { method: "POST", body: input }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["holidays"] }),
+  });
+}
+
+/**
+ * Pulls the standard Bangladesh national public holidays from Google's
+ * public calendar (backend runs the same importer weekly). Safe to call
+ * repeatedly — it upserts by the calendar event's id and never touches a
+ * manually added or edited holiday.
+ */
+export function useImportBangladeshHolidays() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () =>
+      browserFetch<HolidayImportResult>("/holidays/import", { method: "POST" }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["holidays"] }),
   });
 }
