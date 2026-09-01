@@ -54,7 +54,8 @@ function shortTime(iso: string | null, timezone: string): string {
 }
 
 type Props = {
-  month: Date;
+  /** The reporting period label, e.g. "September 2026". */
+  title: string;
   records: AttendanceRecord[];
   timezone: string;
   todayKey: string;
@@ -72,7 +73,7 @@ type Props = {
  * own scroll so a long month never stretches the page.
  */
 export function AttendanceMonthList({
-  month,
+  title,
   records,
   timezone,
   todayKey,
@@ -114,7 +115,7 @@ export function AttendanceMonthList({
       <CardContent className="space-y-3.5">
         <div className="flex items-center justify-between">
           <h3 className="font-heading text-[0.95rem] font-bold text-foreground">
-            {format(month, "MMMM yyyy")}
+            {title}
           </h3>
           <div className="flex items-center gap-0.5">
             <Button variant="ghost" size="icon-sm" onClick={onPrevMonth} aria-label="Previous month">

@@ -1,22 +1,20 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
+import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { addMonths, subMonths, format, parseISO } from "date-fns";
+import type { ReportingPeriod } from "@/lib/reporting-period";
 import { generateMonthCalendarDays, type CalendarRecord } from "../utils";
 import type { CalendarDayItem } from "../mockData";
 import { DayDetailsModal } from "./DayDetailsModal";
 
 type Props = {
-  visibleMonth: Date;
-  onVisibleMonthChange: (month: Date) => void;
+  /** The reporting period in view (docs/PRD.md §85). */
+  period: ReportingPeriod;
+  isCurrentPeriod: boolean;
+  onPrevPeriod: () => void;
+  onNextPeriod: () => void;
+  onJumpToCurrent: () => void;
   records: CalendarRecord[] | undefined;
   isLoading: boolean;
   holidays?: Array<{ date: string; title: string }>;
@@ -29,11 +27,6 @@ type Props = {
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-const MONTH_NAMES = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
-];
-
 const LEGEND: Array<{ key: keyof ReturnType<typeof generateMonthCalendarDays>["stats"]; label: string; bar: string }> = [
   { key: "workingDays", label: "Working days", bar: "bg-blue-600" },
   { key: "present", label: "Present", bar: "bg-emerald-500" },
@@ -44,8 +37,11 @@ const LEGEND: Array<{ key: keyof ReturnType<typeof generateMonthCalendarDays>["s
 ];
 
 export function AttendanceCalendarCard({
-  visibleMonth,
-  onVisibleMonthChange,
+  period,
+  isCurrentPeriod,
+  onPrevPeriod,
+  onNextPeriod,
+  onJumpToCurrent,
   records,
   isLoading,
   holidays,
@@ -58,8 +54,17 @@ export function AttendanceCalendarCard({
   const [inspectedDay, setInspectedDay] = useState<CalendarDayItem | null>(null);
 
   const { days, stats } = useMemo(
-    () => generateMonthCalendarDays(visibleMonth, records, holidays, weekendDays, joiningDate, todayKey),
-    [visibleMonth, records, holidays, weekendDays, joiningDate, todayKey],
+    () =>
+      generateMonthCalendarDays(
+        period.startDate,
+        period.endDate,
+        records,
+        holidays,
+        weekendDays,
+        joiningDate,
+        todayKey,
+      ),
+    [period.startDate, period.endDate, records, holidays, weekendDays, joiningDate, todayKey],
   );
 
   const handleDayClick = (item: CalendarDayItem) => {
@@ -77,49 +82,34 @@ export function AttendanceCalendarCard({
             </CardTitle>
 
             <div className="flex items-center gap-1.5">
-              <DropdownMenu>
-                <DropdownMenuTrigger className="inline-flex items-center gap-1 text-sm font-bold text-foreground hover:text-primary transition-colors focus:outline-none">
-                  <span>{format(visibleMonth, "MMMM yyyy")}</span>
-                  <ChevronDownIcon className="size-3.5 text-muted-foreground" />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-48 max-h-64 overflow-y-auto rounded-2xl p-1.5 shadow-xl">
-                  {MONTH_NAMES.map((name, idx) => (
-                    <DropdownMenuItem
-                      key={name}
-                      className="cursor-pointer text-xs font-semibold rounded-xl py-1.5"
-                      onClick={() =>
-                        onVisibleMonthChange(new Date(visibleMonth.getFullYear(), idx, 1))
-                      }
-                    >
-                      {name} {visibleMonth.getFullYear()}
-                    </DropdownMenuItem>
-                  ))}
-                  <div className="border-t border-border/50 my-1" />
-                  <DropdownMenuItem
-                    className="cursor-pointer text-xs font-bold text-primary rounded-xl"
-                    onClick={() => onVisibleMonthChange(parseISO(todayKey))}
-                  >
-                    This month
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-
               <button
                 type="button"
-                onClick={() => onVisibleMonthChange(subMonths(visibleMonth, 1))}
+                onClick={onPrevPeriod}
                 className="inline-flex size-6 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
                 aria-label="Previous month"
               >
                 <ChevronLeftIcon className="size-3.5" />
               </button>
+              <span className="text-sm font-bold text-foreground" title={`${period.startDate} → ${period.endDate}`}>
+                {period.label}
+              </span>
               <button
                 type="button"
-                onClick={() => onVisibleMonthChange(addMonths(visibleMonth, 1))}
+                onClick={onNextPeriod}
                 className="inline-flex size-6 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
                 aria-label="Next month"
               >
                 <ChevronRightIcon className="size-3.5" />
               </button>
+              {!isCurrentPeriod && (
+                <button
+                  type="button"
+                  onClick={onJumpToCurrent}
+                  className="ml-1 text-xs font-bold text-primary hover:underline"
+                >
+                  This month
+                </button>
+              )}
             </div>
           </div>
 
@@ -155,7 +145,7 @@ export function AttendanceCalendarCard({
             }`}
           >
             {days.map((item, idx) => {
-              if (!item.isCurrentMonth) {
+              if (!item.isInPeriod) {
                 return <div key={`empty-${idx}`} className="max-w-[72px] h-[53px] w-full mx-auto" />;
               }
 

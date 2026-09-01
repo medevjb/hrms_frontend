@@ -1,10 +1,7 @@
 import {
-  startOfMonth,
-  endOfMonth,
   startOfWeek,
   endOfWeek,
   eachDayOfInterval,
-  isSameMonth,
   format,
   differenceInMonths,
   differenceInDays,
@@ -105,8 +102,16 @@ const WEEKDAY_NAMES = [
   "saturday",
 ];
 
+/**
+ * Builds the calendar grid for one reporting period (docs/PRD.md §85).
+ * `periodStart` / `periodEnd` are inclusive `yyyy-MM-dd` bounds — with a
+ * custom cut-off they straddle two calendar months (e.g. 26 Aug – 25 Sep),
+ * so the grid runs from the Sunday on/before `periodStart` to the Saturday
+ * on/after `periodEnd`. Stats count only days inside the period.
+ */
 export function generateMonthCalendarDays(
-  currentDate: Date,
+  periodStart: string,
+  periodEnd: string,
   records?: CalendarRecord[],
   holidays?: Array<{ date: string; title: string }>,
   weekendDays?: string[],
@@ -125,10 +130,8 @@ export function generateMonthCalendarDays(
     noRecord: number;
   };
 } {
-  const monthStart = startOfMonth(currentDate);
-  const monthEnd = endOfMonth(currentDate);
-  const calendarStart = startOfWeek(monthStart, { weekStartsOn: 0 });
-  const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 0 });
+  const calendarStart = startOfWeek(parseISO(periodStart), { weekStartsOn: 0 });
+  const calendarEnd = endOfWeek(parseISO(periodEnd), { weekStartsOn: 0 });
 
   const allDates = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
 
@@ -166,8 +169,8 @@ export function generateMonthCalendarDays(
   const joined = joiningDate ? parseISO(joiningDate) : null;
 
   for (const date of allDates) {
-    const isCurMonth = isSameMonth(date, monthStart);
     const dateKey = format(date, "yyyy-MM-dd");
+    const isInPeriod = dateKey >= periodStart && dateKey <= periodEnd;
     const dayNumber = date.getDate();
     const dayOfWeek = date.getDay();
     const isWeekend = weekendSet.has(WEEKDAY_NAMES[dayOfWeek]);
@@ -204,7 +207,7 @@ export function generateMonthCalendarDays(
       status = "NO_RECORD";
     }
 
-    if (isCurMonth && status !== "PRE_HIRE") {
+    if (isInPeriod && status !== "PRE_HIRE") {
       if (!isWeekend && status !== "HOLIDAY") stats.workingDays++;
       if (status === "PRESENT") stats.present++;
       else if (status === "LATE") stats.late++;
@@ -227,7 +230,7 @@ export function generateMonthCalendarDays(
       lateMinutes,
       shiftName,
       note,
-      isCurrentMonth: isCurMonth,
+      isInPeriod,
       isToday: dateKey === todayKey,
     });
   }

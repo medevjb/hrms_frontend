@@ -2,7 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { toast } from "@/components/ui/toast";
-import { startOfMonth, endOfMonth, format, parseISO } from "date-fns";
+import { format, parseISO } from "date-fns";
+import { useReportingPeriod } from "@/hooks/use-reporting-period";
 import { useCurrentUser } from "@/features/auth/CurrentUserContext";
 import { useProfile } from "@/services/profile";
 import { useDashboard } from "@/services/dashboard";
@@ -70,15 +71,12 @@ export function SelfDashboard() {
   // only until /attendance/today lands.
   const orgTodayKey = today?.work_date ?? format(new Date(), "yyyy-MM-dd");
 
-  const [visibleMonth, setVisibleMonth] = useState<Date | null>(null);
-  const activeMonth = visibleMonth ?? parseISO(orgTodayKey);
-  const monthFrom = format(startOfMonth(activeMonth), "yyyy-MM-dd");
-  const monthTo = format(endOfMonth(activeMonth), "yyyy-MM-dd");
+  const { period, isCurrent, goPrev, goNext, goToCurrent } = useReportingPeriod();
   const employeeId = profile?.employee?.id;
   const { data: monthRecords, isLoading: monthLoading } = useAttendanceMonth(
     employeeId,
-    monthFrom,
-    monthTo,
+    period.startDate,
+    period.endDate,
   );
 
   const checkIn = useCheckIn();
@@ -209,8 +207,11 @@ export function SelfDashboard() {
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-12">
         <div className="xl:col-span-7 2xl:col-span-8">
           <AttendanceCalendarCard
-            visibleMonth={activeMonth}
-            onVisibleMonthChange={setVisibleMonth}
+            period={period}
+            isCurrentPeriod={isCurrent}
+            onPrevPeriod={goPrev}
+            onNextPeriod={goNext}
+            onJumpToCurrent={goToCurrent}
             records={calendarRecords}
             isLoading={monthLoading}
             holidays={holidays}

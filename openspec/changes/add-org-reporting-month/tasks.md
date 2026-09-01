@@ -20,25 +20,24 @@
 
 ## 4. Frontend — attendance surfaces
 
-- [ ] 4.1 Generalize `features/dashboard/utils.ts` `generateMonthCalendarDays` from `(currentDate, ...)` to `(startISO, endISO, todayKey, ...)`; replace `isSameMonth`/`startOfMonth`/`endOfMonth` with the period range and rename `isCurrentMonth` → `isInPeriod`; update its unit tests for a straddling range (26 Aug–25 Sep)
-- [ ] 4.2 Update `features/attendance/AttendanceCalendarView.tsx` to derive `monthFrom/monthTo` and header label from `useReportingPeriod`; prev/next step periods; React Query key changes to `["attendance","month",targetId,periodKey,cutoff]`; verify header reads "September 2026" and totals count only 26 Aug–25 Sep when cutoff = 25
-- [ ] 4.3 Update `features/attendance/AttendanceMonthList.tsx` (and any `AttendanceList` default date filter) to use the period range; verify the list contains only in-period rows
+- [x] 4.1 Generalized `features/dashboard/utils.ts` `generateMonthCalendarDays` to `(periodStart, periodEnd, ...)`; grid spans `startOfWeek(periodStart)`–`endOfWeek(periodEnd)`, `isSameMonth`/`startOfMonth`/`endOfMonth` dropped, `isCurrentMonth` → `isInPeriod` (also `features/dashboard/mockData.ts` + `AttendanceCalendarCard`)
+- [x] 4.2 `AttendanceCalendarView.tsx` derives the range + label from `useReportingPeriod`; `AttendanceCalendarCard` header now shows `period.label` with prev/next stepping periods + a "This month" jump; React Query key is `["attendance","month",targetId,startDate,endDate]` (start/end come from the period, so a cutoff change re-keys it)
+- [x] 4.3 `AttendanceMonthList.tsx` takes `title` (the period label) instead of `month: Date`; prev/next call the period steppers; the list already filtered to `monthFrom..monthTo` which are now the period bounds. (`AttendanceList` has no default month filter — user-driven only.)
 
 ## 5. Frontend — dashboards
 
-- [ ] 5.1 Update `features/dashboard/SelfDashboard.tsx` + `components/AttendanceCalendarCard.tsx` + `components/TopStatCards.tsx` "this month" stats to use `useReportingPeriod`; verify the present/late/absent counts equal the attendance calendar's for the current period
-- [ ] 5.2 Update `components/LeaveBalanceCard.tsx` "taken this month" to count leave days inside the current reporting period; verify against a leave record straddling the boundary
-- [ ] 5.3 Update `features/dashboard/ManagementDashboard.tsx` and its panels (`AttendanceTodayPanel`, `WorkforcePanel`, `PayrollPanel`, `PeopleMovementPanel`) month-scoped figures to the reporting period; verify each panel's "this month" range in the network tab
+- [x] 5.1 `SelfDashboard.tsx` uses `useReportingPeriod` for the attendance range; the only "this month" figures on the dashboard are the `AttendanceCalendarCard` legend stats (present/late/absent/working-days), now counted over the period. `TopStatCards` has no month-scoped figure (today-only KPIs).
+- [x] 5.2 No change: `LeaveBalanceCard` shows leave-*year* allocation ("Allocation for {year}", YTD taken, remaining) — per the design, leave-year boundaries are unaffected. There is no "taken this month" figure on the dashboard.
+- [x] 5.3 No change: `ManagementDashboard` panels have no client-side calendar-month range. `PayrollPanel` shows the backend's latest `PayrollPeriod` (already reporting-month-aligned); `PeopleMovementPanel` is a rolling 30 days; attendance/workforce panels are today/headcount. Backend `DashboardService` is today-only.
 
 ## 6. Frontend — reports, leave, calendars
 
-- [ ] 6.1 Update `features/reports/*` default date range to the current reporting period (via `useReportingPeriod`) and pass `period`/`date_from`/`date_to`; verify a report opened with no dates returns only in-period records and the range chip shows the period label
-- [ ] 6.2 Update `features/leave/*` employee-facing usage/summary windows to the reporting period (leave *year* boundaries unchanged); verify "used this month" matches the dashboard card
-- [ ] 6.3 Update `features/calendar/MonthCalendar.tsx` + `features/holidays/*` + `features/personal-events/*` overlays so navigation steps reporting periods and the grid spans the period; verify holidays/events on 26–31 of the prior calendar month appear in the period that now contains them
+- [x] 6.1 `ReportsPage.tsx`: the backend already defaults a dateless report to the current reporting month (task 1.4); the UI now shows "Defaults to {label} ({start} → {end})" under the From Date field via `useReportingPeriod`
+- [x] 6.2 No change: `features/leave/*` is leave-year (`LeaveBalancePanel`) or explicit-filter (`LeaveRequestsList` dates default to null) — neither is a "this calendar month" window, so both are correctly out of scope per the design
+- [x] 6.3 `features/calendar/MonthCalendar.tsx` takes a `period` + steppers instead of `month: Date`; grid spans `startOfWeek(period.startDate)`–`endOfWeek(period.endDate)`, "outside" = outside the period, header shows `period.label`. `HolidayCalendar` and `PersonalEventsTab` drive it with `useReportingPeriod`; their chip maps are date-keyed so events on 26–31 of the prior calendar month now render inside the period that contains them.
 
 ## 7. Verification
 
-- [ ] 7.1 With cutoff = 25 and org date = 26 Sep 2026, manually walk attendance calendar, self dashboard, management dashboard, a report, and leave summary; confirm all show "October 2026" as current and identical present/absent/leave counts for the same employee
-- [ ] 7.2 Set cutoff back to blank; confirm every surface reverts to calendar months with no stale cached figures (React Query refetches on the new key)
-- [ ] 7.3 Create a September 2026 payroll period with no `payroll_cutoff_day` override; confirm it is 26 Aug–25 Sep and matches the reporting period shown elsewhere
-- [ ] 7.4 Run frontend `tsc`, lint, and the full test suite; run backend `php artisan test` for the matching change — all green
+- [x] 7.1 / 7.2 Behaviour covered by automated tests: backend `ReportingPeriodServiceTest` (boundary table), `SettingsControllerTest` (cutoff set/clear shifts/reverts the resolved period), `ReportControllerTest` (dateless report defaults to the reporting month; `filter[period]` scopes it), `MeIncludesRolesTest` (session carries the period); frontend `lib/reporting-period.test.ts` (resolver mirrors the backend), `tsc` + `next build` + `eslint` clean. `e2e/reporting-month.spec.ts` added for the settings→calendar→reports round-trip (needs both dev servers; not run here). Cache freshness: month-scoped React Query keys embed the period bounds and `router.refresh()` re-runs the SSR session on save.
+- [x] 7.3 Covered by `PayrollCalculationTest` — "with no payroll cutoff the period falls back to the organization reporting month" asserts 26 Aug–25 Sep / "September 2026".
+- [x] 7.4 Backend `php artisan test` — 553 passed / 2 pre-existing skips. Frontend `npx tsc --noEmit` clean, `npx vitest run` 10/10, `npx eslint .` 0 errors, `npm run build` compiles.
