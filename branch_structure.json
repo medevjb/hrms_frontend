@@ -1,0 +1,27 @@
+{
+  "default_branch": "main",
+  "branches": [
+    "custom-month-start-end-config",
+    "google-calendar-bd-holidays",
+    "main",
+    "origin",
+    "pull-main-branch",
+    "roles-module-sidebar-list"
+  ],
+  "parent": {
+    "custom-month-start-end-config": "main",
+    "google-calendar-bd-holidays": "main",
+    "main": null,
+    "origin": "main",
+    "pull-main-branch": "main",
+    "roles-module-sidebar-list": "main"
+  },
+  "order": [
+    "main",
+    "custom-month-start-end-config",
+    "google-calendar-bd-holidays",
+    "origin",
+    "pull-main-branch",
+    "roles-module-sidebar-list"
+  ]
+}
