@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
+import { format } from "date-fns";
 import { useCurrentUser } from "@/features/auth/CurrentUserContext";
 import {
   type ReportingPeriod,
@@ -35,17 +36,22 @@ type UseReportingPeriod = {
  */
 export function useReportingPeriod(initialKey?: string): UseReportingPeriod {
   const { organization } = useCurrentUser();
-  const cutoff = organization.reporting_month_cutoff_day;
+  const cutoff = organization.reporting_month_cutoff_day ?? null;
 
   const current = useMemo<ReportingPeriod>(() => {
     const payload = organization.reporting_period;
+    // Defensive: a session payload from before this feature shipped won't
+    // carry the resolved period — fall back to resolving it here.
+    if (!payload) {
+      return resolvePeriod(format(new Date(), "yyyy-MM-dd"), cutoff);
+    }
     return {
       key: payload.key,
       label: payload.label,
       startDate: payload.start_date,
       endDate: payload.end_date,
     };
-  }, [organization.reporting_period]);
+  }, [organization.reporting_period, cutoff]);
 
   const [selectedKey, setSelectedKey] = useState<string | null>(initialKey ?? null);
 
