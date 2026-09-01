@@ -18,11 +18,6 @@ export type SettingsSection = {
    * own cards (a table, a stack of panels).
    */
   bare?: boolean;
-  /**
-   * Drop the readable `max-w-3xl` cap — for sections built around wide
-   * tables that need the whole content column.
-   */
-  wide?: boolean;
   render: () => React.ReactNode;
 };
 
@@ -111,7 +106,7 @@ export function SettingsScaffold({
         <div className="min-w-0 flex-1 lg:pr-4 xl:pr-8">
           {current &&
             (current.bare ? (
-              <div className={cn("space-y-8", current.wide ? "max-w-5xl" : "max-w-3xl")}>
+              <div className="max-w-5xl space-y-8">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2.5">
                     <current.icon className="size-4.5 text-primary" />
@@ -126,7 +121,7 @@ export function SettingsScaffold({
                 {current.render()}
               </div>
             ) : (
-              <Card className={cn("shadow-sm", current.wide ? "max-w-5xl" : "max-w-3xl")}>
+              <Card className="max-w-5xl shadow-sm">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2.5 text-base font-bold tracking-tight">
                     <current.icon className="size-4.5 text-primary" />

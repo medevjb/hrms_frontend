@@ -81,7 +81,6 @@ const POLICIES: GuardedSection[] = [
     blurb: "Leave-year timing, the leave-type catalogue and default allocations, and org-wide balance changes.",
     permissions: ["leave.policy.manage"],
     bare: true,
-    wide: true,
     render: () => <LeaveSettingsTab />,
   },
   {
