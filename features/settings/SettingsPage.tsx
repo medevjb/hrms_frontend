@@ -78,8 +78,10 @@ const POLICIES: GuardedSection[] = [
     value: "leave",
     label: "Leave",
     icon: PlaneIcon,
-    blurb: "When the leave year starts and how much balance can carry forward.",
+    blurb: "Leave-year timing, the leave-type catalogue and default allocations, and org-wide balance changes.",
     permissions: ["leave.policy.manage"],
+    bare: true,
+    wide: true,
     render: () => <LeaveSettingsTab />,
   },
   {

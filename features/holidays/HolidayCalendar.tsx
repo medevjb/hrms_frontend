@@ -4,54 +4,101 @@ import { useMemo, useState } from "react";
 import { format } from "date-fns";
 import { PlusIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Calendar, CalendarDayButton } from "@/components/ui/calendar";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageLoadingSkeleton } from "@/components/ui/PageLoadingSkeleton";
+import { MonthCalendar, type CalendarChip } from "@/features/calendar/MonthCalendar";
+import { datesInRange } from "@/features/calendar/utils";
+import { useCurrentUser } from "@/features/auth/CurrentUserContext";
+import { PERSONAL_EVENT_CHIP, PERSONAL_EVENT_DOT } from "@/features/personal-events/constants";
+import { SavePersonalEventModal } from "@/features/personal-events/SavePersonalEventModal";
 import { cn } from "@/lib/utils";
 import { useHolidays } from "@/services/holidays";
-import type { Holiday, HolidayType } from "@/types/holidays";
+import { usePersonalEvents } from "@/services/personal-events";
+import type { Holiday } from "@/types/holidays";
+import type { PersonalEvent } from "@/types/personal-events";
+import { HOLIDAY_TYPE_CHIP, HOLIDAY_TYPE_DOT, HOLIDAY_TYPE_LEGEND } from "./constants";
 import { SaveHolidayModal } from "./SaveHolidayModal";
 
-const TYPE_DOT: Record<HolidayType, string> = {
-  NATIONAL: "bg-blue-500",
-  RELIGIOUS: "bg-purple-500",
-  COMPANY: "bg-teal-500",
-  OTHER: "bg-gray-400",
-};
-
-const LEGEND: { type: HolidayType; label: string }[] = [
-  { type: "NATIONAL", label: "National" },
-  { type: "RELIGIOUS", label: "Religious" },
-  { type: "COMPANY", label: "Company" },
-  { type: "OTHER", label: "Other" },
-];
-
 export function HolidayCalendar() {
+  const user = useCurrentUser();
+  const canManage = user.permissions.includes("holiday.manage");
+
   const { data: holidays, isLoading } = useHolidays();
-  const [opened, setOpened] = useState(false);
-  const [editing, setEditing] = useState<Holiday | undefined>(undefined);
+  const { data: personalEvents } = usePersonalEvents();
+
+  const [month, setMonth] = useState<Date>(() => new Date());
+
+  const [holidayOpen, setHolidayOpen] = useState(false);
+  const [editingHoliday, setEditingHoliday] = useState<Holiday | undefined>(undefined);
   const [pickedDate, setPickedDate] = useState<string | null>(null);
 
-  const byDate = useMemo(() => {
-    const map = new Map<string, Holiday>();
+  const [eventOpen, setEventOpen] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<PersonalEvent | undefined>(undefined);
+
+  const holidaysByDate = useMemo(() => {
+    const map = new Map<string, Holiday[]>();
     for (const holiday of holidays ?? []) {
-      map.set(holiday.date, holiday);
+      const list = map.get(holiday.date) ?? [];
+      list.push(holiday);
+      map.set(holiday.date, list);
     }
     return map;
   }, [holidays]);
 
-  function openForDate(date: Date) {
-    const iso = format(date, "yyyy-MM-dd");
-    const existing = byDate.get(iso);
-    setEditing(existing);
-    setPickedDate(iso);
-    setOpened(true);
+  const eventsByDate = useMemo(() => {
+    const map = new Map<string, PersonalEvent[]>();
+    for (const event of personalEvents ?? []) {
+      for (const iso of datesInRange(event.start_date, event.end_date)) {
+        const list = map.get(iso) ?? [];
+        list.push(event);
+        map.set(iso, list);
+      }
+    }
+    return map;
+  }, [personalEvents]);
+
+  function editHoliday(holiday: Holiday) {
+    if (!canManage) return;
+    setEditingHoliday(holiday);
+    setPickedDate(holiday.date);
+    setHolidayOpen(true);
   }
 
-  function close() {
-    setOpened(false);
-    setEditing(undefined);
+  function addHoliday(iso: string) {
+    if (!canManage) return;
+    setEditingHoliday(undefined);
+    setPickedDate(iso);
+    setHolidayOpen(true);
+  }
+
+  function closeHoliday() {
+    setHolidayOpen(false);
+    setEditingHoliday(undefined);
     setPickedDate(null);
+  }
+
+  function chipsForDate(iso: string): CalendarChip[] {
+    const holidayChips: CalendarChip[] = (holidaysByDate.get(iso) ?? []).map((holiday) => ({
+      key: `h-${holiday.id}`,
+      label: holiday.title,
+      className: HOLIDAY_TYPE_CHIP[holiday.type],
+      dotClassName: HOLIDAY_TYPE_DOT[holiday.type],
+      muted: !holiday.active,
+      onClick: canManage ? () => editHoliday(holiday) : undefined,
+    }));
+
+    const eventChips: CalendarChip[] = (eventsByDate.get(iso) ?? []).map((event) => ({
+      key: `e-${event.id}`,
+      label: event.title,
+      className: PERSONAL_EVENT_CHIP,
+      dotClassName: PERSONAL_EVENT_DOT,
+      onClick: () => {
+        setEditingEvent(event);
+        setEventOpen(true);
+      },
+    }));
+
+    return [...holidayChips, ...eventChips];
   }
 
   if (isLoading) {
@@ -59,61 +106,59 @@ export function HolidayCalendar() {
   }
 
   return (
-    <div className="space-y-4">
-      <Card>
-        <CardContent>
-          <Calendar
-            numberOfMonths={1}
-            className="mx-auto [--cell-size:3rem]"
-            onDayClick={(date) => openForDate(date)}
-            components={{
-              DayButton: (props) => {
-                const iso = format(props.day.date, "yyyy-MM-dd");
-                const holiday = byDate.get(iso);
+    <Card>
+      <CardContent className="space-y-4">
+        <MonthCalendar
+          month={month}
+          onMonthChange={setMonth}
+          chipsForDate={chipsForDate}
+          onDayClick={canManage ? addHoliday : undefined}
+          actions={
+            canManage && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => addHoliday(format(new Date(), "yyyy-MM-dd"))}
+              >
+                <PlusIcon />
+                Add holiday
+              </Button>
+            )
+          }
+        />
 
-                return (
-                  <div className="relative size-full">
-                    <CalendarDayButton {...props} />
-                    {holiday && (
-                      <span
-                        className={cn(
-                          "pointer-events-none absolute bottom-1 left-1/2 size-2 -translate-x-1/2 rounded-full ring-2 ring-card",
-                          TYPE_DOT[holiday.type],
-                        )}
-                      />
-                    )}
-                  </div>
-                );
-              },
-            }}
-          />
-        </CardContent>
-      </Card>
-
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-4">
-          {LEGEND.map((entry) => (
-            <div key={entry.type} className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <span className={cn("size-2 rounded-full", TYPE_DOT[entry.type])} />
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+          {HOLIDAY_TYPE_LEGEND.map((entry) => (
+            <div
+              key={entry.type}
+              className="flex items-center gap-1.5 text-xs text-muted-foreground"
+            >
+              <span className={cn("size-2 rounded-full", HOLIDAY_TYPE_DOT[entry.type])} />
               {entry.label}
             </div>
           ))}
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <span className={cn("size-2 rounded-full", PERSONAL_EVENT_DOT)} />
+            My events
+          </div>
+          {!canManage && <span className="text-xs text-muted-foreground">· Holidays are view only</span>}
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => {
-            setEditing(undefined);
-            setPickedDate(null);
-            setOpened(true);
-          }}
-        >
-          <PlusIcon />
-          Add holiday
-        </Button>
-      </div>
+      </CardContent>
 
-      <SaveHolidayModal opened={opened} onClose={close} holiday={editing} initialDate={pickedDate} />
-    </div>
+      <SaveHolidayModal
+        opened={holidayOpen}
+        onClose={closeHoliday}
+        holiday={editingHoliday}
+        initialDate={pickedDate}
+      />
+      <SavePersonalEventModal
+        opened={eventOpen}
+        onClose={() => {
+          setEventOpen(false);
+          setEditingEvent(undefined);
+        }}
+        event={editingEvent}
+      />
+    </Card>
   );
 }
