@@ -9,7 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { addMonths, subMonths, format } from "date-fns";
+import { addMonths, subMonths, format, parseISO } from "date-fns";
 import { generateMonthCalendarDays, type CalendarRecord } from "../utils";
 import type { CalendarDayItem } from "../mockData";
 import { DayDetailsModal } from "./DayDetailsModal";
@@ -22,6 +22,8 @@ type Props = {
   holidays?: Array<{ date: string; title: string }>;
   weekendDays?: string[];
   joiningDate?: string | null;
+  /** Organization's current date (YYYY-MM-DD), resolved server-side. */
+  todayKey: string;
   onRequestCorrection: (day: CalendarDayItem) => void;
 };
 
@@ -49,14 +51,15 @@ export function AttendanceCalendarCard({
   holidays,
   weekendDays,
   joiningDate,
+  todayKey,
   onRequestCorrection,
 }: Props) {
-  const [selectedDateKey, setSelectedDateKey] = useState<string>(() => format(new Date(), "yyyy-MM-dd"));
+  const [selectedDateKey, setSelectedDateKey] = useState<string>(todayKey);
   const [inspectedDay, setInspectedDay] = useState<CalendarDayItem | null>(null);
 
   const { days, stats } = useMemo(
-    () => generateMonthCalendarDays(visibleMonth, records, holidays, weekendDays, joiningDate),
-    [visibleMonth, records, holidays, weekendDays, joiningDate],
+    () => generateMonthCalendarDays(visibleMonth, records, holidays, weekendDays, joiningDate, todayKey),
+    [visibleMonth, records, holidays, weekendDays, joiningDate, todayKey],
   );
 
   const handleDayClick = (item: CalendarDayItem) => {
@@ -94,7 +97,7 @@ export function AttendanceCalendarCard({
                   <div className="border-t border-border/50 my-1" />
                   <DropdownMenuItem
                     className="cursor-pointer text-xs font-bold text-primary rounded-xl"
-                    onClick={() => onVisibleMonthChange(new Date())}
+                    onClick={() => onVisibleMonthChange(parseISO(todayKey))}
                   >
                     This month
                   </DropdownMenuItem>
