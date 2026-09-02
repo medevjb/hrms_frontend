@@ -14,7 +14,6 @@ import {
   UsersIcon,
 } from "lucide-react";
 import { toast } from "@/components/ui/toast";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -29,19 +28,19 @@ import type { Announcement, AnnouncementType } from "@/types/announcements";
 function CategoryIcon({ type }: { type: AnnouncementType }) {
   switch (type) {
     case "EMERGENCY":
-      return <AlertTriangleIcon className="size-4 text-red-500" />;
+      return <AlertTriangleIcon className="size-3.5 text-red-500" />;
     case "HR_NOTICE":
-      return <BriefcaseIcon className="size-4 text-blue-500" />;
+      return <BriefcaseIcon className="size-3.5 text-blue-500" />;
     case "POLICY":
-      return <ShieldCheckIcon className="size-4 text-purple-500" />;
+      return <ShieldCheckIcon className="size-3.5 text-purple-500" />;
     case "HOLIDAY":
-      return <CalendarIcon className="size-4 text-emerald-500" />;
+      return <CalendarIcon className="size-3.5 text-emerald-500" />;
     case "PAYROLL":
-      return <DollarSignIcon className="size-4 text-amber-500" />;
+      return <DollarSignIcon className="size-3.5 text-amber-500" />;
     case "TEAM":
-      return <UsersIcon className="size-4 text-indigo-500" />;
+      return <UsersIcon className="size-3.5 text-indigo-500" />;
     default:
-      return <MegaphoneIcon className="size-4 text-slate-500" />;
+      return <MegaphoneIcon className="size-3.5 text-slate-500" />;
   }
 }
 
@@ -81,51 +80,48 @@ function Body({ announcement, onClose }: { announcement: Announcement; onClose: 
   const needsAck = announcement.acknowledgement_required && !isAcknowledged;
 
   return (
-    <div className="space-y-4 pt-1">
-      {/* Category & Status Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-border/60 text-xs">
-        <div className="flex items-center gap-2">
-          <Badge variant="outline" className="gap-1.5 py-0.5 px-2 font-medium">
+    <>
+      <div className="space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 pb-3 text-xs">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-border/70 px-2 py-0.5 font-medium">
             <CategoryIcon type={announcement.type} />
-            <span>{typeLabel(announcement.type)}</span>
-          </Badge>
-          <span className="text-muted-foreground flex items-center gap-1">
+            {typeLabel(announcement.type)}
+          </span>
+          <span className="inline-flex items-center gap-1.5 text-muted-foreground">
             <ClockIcon className="size-3" />
             {formatDate(announcement.published_at ?? announcement.created_at)}
+            {announcement.created_by && (
+              <>
+                <span aria-hidden>·</span>
+                <span>{announcement.created_by.name}</span>
+              </>
+            )}
           </span>
         </div>
 
-        {announcement.created_by && (
-          <span className="text-muted-foreground text-[11px]">
-            From: <strong className="text-foreground">{announcement.created_by.name}</strong>
-          </span>
+        <div className="max-h-[55vh] overflow-y-auto rounded-lg border border-border/50 bg-muted/20 p-4 text-sm leading-relaxed whitespace-pre-line text-foreground">
+          {announcement.content}
+        </div>
+
+        {needsAck && (
+          <div className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-800 dark:text-amber-300">
+            <AlertCircleIcon className="size-4 shrink-0" />
+            <span>This notice needs your acknowledgement.</span>
+          </div>
+        )}
+
+        {isAcknowledged && (
+          <div className="flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs text-emerald-800 dark:text-emerald-300">
+            <CheckCircle2Icon className="size-4 shrink-0" />
+            <span>You acknowledged this notice.</span>
+          </div>
         )}
       </div>
 
-      {/* Content Body */}
-      <div className="max-h-[55vh] overflow-y-auto whitespace-pre-line text-sm leading-relaxed p-4 rounded-xl bg-muted/20 border border-border/50 text-foreground">
-        {announcement.content}
-      </div>
-
-      {/* Requirement Notice */}
-      {needsAck && (
-        <div className="flex items-center gap-2 p-3 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-800 dark:text-amber-300 text-xs">
-          <AlertCircleIcon className="size-4 shrink-0" />
-          <span>This official announcement requires your explicit acknowledgement.</span>
-        </div>
-      )}
-
-      {isAcknowledged && (
-        <div className="flex items-center gap-2 p-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 text-xs">
-          <CheckCircle2Icon className="size-4 shrink-0" />
-          <span>You acknowledged this announcement.</span>
-        </div>
-      )}
-
-      <DialogFooter className="pt-2 border-t border-border/60">
+      <DialogFooter>
         {needsAck ? (
           <Button
-            className="w-full sm:w-auto gap-2"
+            className="gap-2"
             disabled={markRead.isPending}
             onClick={() => {
               markRead.mutate(true, {
@@ -137,7 +133,7 @@ function Body({ announcement, onClose }: { announcement: Announcement; onClose: 
             }}
           >
             <CheckCircle2Icon className="size-4" />
-            <span>I Acknowledge This Notice</span>
+            Acknowledge
           </Button>
         ) : (
           <Button variant="outline" onClick={onClose}>
@@ -145,7 +141,7 @@ function Body({ announcement, onClose }: { announcement: Announcement; onClose: 
           </Button>
         )}
       </DialogFooter>
-    </div>
+    </>
   );
 }
 
@@ -158,13 +154,12 @@ export function AnnouncementDetailDialog({
 }) {
   return (
     <Dialog open={announcement !== null} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
-        <DialogHeader className="pb-1">
-          <DialogTitle className="text-lg font-bold">{announcement?.title}</DialogTitle>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>{announcement?.title}</DialogTitle>
         </DialogHeader>
         {announcement && <Body key={announcement.id} announcement={announcement} onClose={onClose} />}
       </DialogContent>
     </Dialog>
   );
 }
-

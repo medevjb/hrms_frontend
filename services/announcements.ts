@@ -71,11 +71,14 @@ export function useUpdateAnnouncement(id: number) {
   });
 }
 
-export function usePublishAnnouncement(id: number) {
+export function usePublishAnnouncement(id?: number) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: () => browserFetch<Announcement>(`/announcements/${id}/publish`, { method: "POST" }),
+    // `id` can come from the hook call (a row action) or from the mutate
+    // argument (publishing a draft straight after creating it).
+    mutationFn: (publishId?: number) =>
+      browserFetch<Announcement>(`/announcements/${publishId ?? id}/publish`, { method: "POST" }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["announcements"] }),
   });
 }
