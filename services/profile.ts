@@ -52,7 +52,12 @@ export function useUpdateProfilePhoto() {
 
       return ((await response.json()) as ApiSuccess<Profile>).data;
     },
-    onSuccess: (profile) => queryClient.setQueryData(["profile"], profile),
+    onSuccess: (profile) => {
+      queryClient.setQueryData(["profile"], profile);
+      // The same person shows up in the employee list and detail with a
+      // versioned photo_url — refetch so the new photo appears there too.
+      queryClient.invalidateQueries({ queryKey: ["employees"] });
+    },
   });
 }
 
@@ -61,6 +66,9 @@ export function useDeleteProfilePhoto() {
 
   return useMutation({
     mutationFn: () => browserFetch<Profile>("/auth/profile/photo", { method: "DELETE" }),
-    onSuccess: (profile) => queryClient.setQueryData(["profile"], profile),
+    onSuccess: (profile) => {
+      queryClient.setQueryData(["profile"], profile);
+      queryClient.invalidateQueries({ queryKey: ["employees"] });
+    },
   });
 }

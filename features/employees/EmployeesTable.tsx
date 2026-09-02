@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 import { toast } from "@/components/ui/toast";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { BulkBar } from "@/components/ui/BulkBar";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -16,6 +17,7 @@ import { useCurrentUser } from "@/features/auth/CurrentUserContext";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { useRowSelection } from "@/hooks/use-row-selection";
 import { apiErrorMessage } from "@/lib/api-error";
+import { proxyMedia } from "@/lib/media";
 import { useDeleteEmployee, useEmployees } from "@/services/employees";
 import { ChangeEmployeeStatusDialog } from "./ChangeEmployeeStatusDialog";
 import {
@@ -163,9 +165,15 @@ export function EmployeesTable({ onInvite }: { onInvite?: () => void }) {
                         href={`/employees/${employee.id}`}
                         className="group flex items-center gap-3 font-semibold text-foreground transition-colors hover:text-primary"
                       >
-                        <div className="flex size-8 shrink-0 items-center justify-center rounded-full border border-primary/20 bg-primary/10 text-xs font-bold text-primary">
-                          {employee.full_name.charAt(0).toUpperCase()}
-                        </div>
+                        <Avatar className="size-8 border border-primary/20">
+                          <AvatarImage
+                            src={proxyMedia(employee.photo_url)}
+                            alt={employee.full_name}
+                          />
+                          <AvatarFallback className="bg-primary/10 text-xs font-bold text-primary">
+                            {employee.full_name.charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
                         <span className="truncate group-hover:underline">{employee.full_name}</span>
                       </Link>
                     </TableCell>
