@@ -47,3 +47,6 @@ next-env.d.ts
 
 # Local agent tooling (openspec plugin skills/commands)
 .claude/
+branch_structure.json
+temp_auto_push.bat
+temp_interactive_push.bat
