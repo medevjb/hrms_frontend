@@ -12,9 +12,9 @@ test.beforeEach(async ({ page }) => {
 });
 
 test.afterEach(async ({ page }) => {
-  // Leave the org back on calendar months for the next spec.
+  // Leave the org back on calendar months for the next spec. The General
+  // section is the default landing tab of System settings.
   await page.goto("/settings");
-  await page.getByRole("tab", { name: "Organization" }).click();
   await page.getByLabel("Reporting month cut-off day").fill("");
   await page.getByRole("button", { name: "Save changes" }).click();
   await expect(page.getByText("Organization settings saved")).toBeVisible();
@@ -22,7 +22,6 @@ test.afterEach(async ({ page }) => {
 
 test("a custom reporting cut-off shifts the attendance calendar and reports", async ({ page }) => {
   await page.goto("/settings");
-  await page.getByRole("tab", { name: "Organization" }).click();
 
   await page.getByLabel("Reporting month cut-off day").fill("25");
   await page.getByRole("button", { name: "Save changes" }).click();
