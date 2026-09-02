@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { DashboardAttendanceToday, DashboardOnLeave } from "@/types/dashboard";
+import { AttendanceTodayChart } from "./AttendanceTodayChart";
 
 const CELLS: Array<{ key: keyof DashboardAttendanceToday; label: string; className: string }> = [
   { key: "present", label: "Present", className: "text-emerald-600 dark:text-emerald-400" },
@@ -39,6 +40,8 @@ export function AttendanceTodayPanel({ attendance }: { attendance: DashboardAtte
         </Link>
       </CardHeader>
       <CardContent className="space-y-4">
+        <AttendanceTodayChart attendance={attendance} />
+
         <div className="grid grid-cols-5 gap-2">
           {CELLS.map((cell) => (
             <div key={cell.key} className="rounded-xl bg-muted/40 p-2 text-center">
