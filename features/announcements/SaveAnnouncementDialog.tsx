@@ -42,6 +42,7 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useCurrentUser } from "@/features/auth/CurrentUserContext";
+import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { ApiError } from "@/lib/api-error";
 import {
   useCreateAnnouncement,
@@ -87,10 +88,18 @@ function TargetPicker({
   selected: number[];
   onToggle: (id: number) => void;
 }) {
+  const [search, setSearch] = useState("");
+  const debouncedSearch = useDebouncedValue(search.trim(), 250);
+
   const departments = useDepartments();
   const teams = useTeams();
-  const employees = useEmployees({});
-  const [search, setSearch] = useState("");
+  // Employees are searched server-side; departments and teams are short
+  // lists filtered in place.
+  const employees = useEmployees({
+    search: audience === "SELECTED" ? debouncedSearch || undefined : undefined,
+    sort: "name",
+    per_page: 25,
+  });
 
   if (audience === "ALL") return null;
 
@@ -104,9 +113,10 @@ function TargetPicker({
             name: `${e.full_name} (${e.designation})`,
           }));
 
-  const options = search.trim()
-    ? rawOptions.filter((opt) => opt.name.toLowerCase().includes(search.toLowerCase()))
-    : rawOptions;
+  const options =
+    audience === "SELECTED" || !search.trim()
+      ? rawOptions
+      : rawOptions.filter((opt) => opt.name.toLowerCase().includes(search.toLowerCase()));
 
   return (
     <div className="space-y-2 rounded-lg border border-border bg-muted/20 p-2.5">
