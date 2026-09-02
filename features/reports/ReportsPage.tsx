@@ -64,9 +64,9 @@ export function ReportsPage() {
 
       <div className="mb-6 rounded-2xl border border-border/70 bg-card p-4 shadow-xs">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <FormField label="Report Type">
+          <FormField label="Report Type" htmlFor="report_type">
             <Select value={type ?? ""} onValueChange={(v) => setType(v as ReportType)}>
-              <SelectTrigger className="w-full">
+              <SelectTrigger id="report_type" className="w-full">
                 <SelectValue placeholder="Choose a report" />
               </SelectTrigger>
               <SelectContent>
@@ -95,9 +95,9 @@ export function ReportsPage() {
             </>
           )}
 
-          <FormField label="Department">
+          <FormField label="Department" htmlFor="report_department">
             <Select value={departmentId || "all"} onValueChange={(v) => setDepartmentId(v === "all" ? "" : v)}>
-              <SelectTrigger className="w-full">
+              <SelectTrigger id="report_department" className="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

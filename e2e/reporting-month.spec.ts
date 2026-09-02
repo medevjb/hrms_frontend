@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-// Full-stack: the backend (php artisan serve --port=8000) must be running
+// Full-stack: the backend (php artisan serve, or Herd) must be running
 // alongside `npm run dev`.
 
 test.beforeEach(async ({ page }) => {
@@ -12,10 +12,10 @@ test.beforeEach(async ({ page }) => {
 });
 
 test.afterEach(async ({ page }) => {
-  // Leave the org back on calendar months for the next spec. The General
+  // Restore the org-wide default (PRD §85: cut-off day 25). The General
   // section is the default landing tab of System settings.
   await page.goto("/settings");
-  await page.getByLabel("Reporting month cut-off day").fill("");
+  await page.getByLabel("Reporting month cut-off day").fill("25");
   await page.getByRole("button", { name: "Save changes" }).click();
   await expect(page.getByText("Organization settings saved")).toBeVisible();
 });
@@ -23,7 +23,8 @@ test.afterEach(async ({ page }) => {
 test("a custom reporting cut-off shifts the attendance calendar and reports", async ({ page }) => {
   await page.goto("/settings");
 
-  await page.getByLabel("Reporting month cut-off day").fill("25");
+  // Move it off the default of 25 to prove the setting drives the period.
+  await page.getByLabel("Reporting month cut-off day").fill("20");
   await page.getByRole("button", { name: "Save changes" }).click();
   await expect(page.getByText("Organization settings saved")).toBeVisible();
 
