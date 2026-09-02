@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-// Full-stack: the backend (php artisan serve --port=8000) must be running
+// Full-stack: the backend (php artisan serve, or Herd) must be running
 // alongside `npm run dev`.
 
 test.beforeEach(async ({ page }) => {
@@ -12,6 +12,10 @@ test.beforeEach(async ({ page }) => {
 });
 
 test("inviting an employee shows them in the list with INVITED status", async ({ page }) => {
+  // A unique surname per run so repeated runs don't pile up rows that
+  // collide with the row assertion below.
+  const surname = `Test${Date.now()}`;
+
   await page.getByRole("link", { name: "Employees" }).click();
   await expect(page).toHaveURL(/\/employees$/);
 
@@ -20,7 +24,7 @@ test("inviting an employee shows them in the list with INVITED status", async ({
   await expect(dialog).toBeVisible();
 
   await dialog.getByLabel("First name").fill("Playwright");
-  await dialog.getByLabel("Last name").fill("Testuser");
+  await dialog.getByLabel("Last name").fill(surname);
   await dialog.getByLabel("Work email").fill(`playwright-${Date.now()}@example.com`);
   await dialog.getByLabel("Designation").fill("QA Engineer");
   await dialog.getByLabel("Joining date").fill("September 1, 2026");
@@ -28,6 +32,7 @@ test("inviting an employee shows them in the list with INVITED status", async ({
 
   // Dialog closes and the new hire lands in the list as INVITED.
   await expect(dialog).not.toBeVisible();
-  await expect(page.getByRole("cell", { name: "Playwright Testuser" })).toBeVisible();
-  await expect(page.getByText("INVITED").first()).toBeVisible();
+  const row = page.getByRole("row", { name: new RegExp(`Playwright ${surname}`) });
+  await expect(row).toBeVisible();
+  await expect(row.getByText("INVITED")).toBeVisible();
 });

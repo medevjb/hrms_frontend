@@ -36,7 +36,10 @@ export function UserMenu() {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="group flex items-center gap-2.5 rounded-full border border-border/60 bg-card px-2.5 py-1 text-sm outline-none transition-colors hover:border-border hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring">
+      <DropdownMenuTrigger
+        aria-label="Account menu"
+        className="group flex items-center gap-2.5 rounded-full border border-border/60 bg-card px-2.5 py-1 text-sm outline-none transition-colors hover:border-border hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring"
+      >
         <Avatar className="size-7.5 border border-primary/20">
           {photoUrl && <AvatarImage src={photoUrl} alt="" />}
           <AvatarFallback className="bg-primary/10 text-xs font-bold text-primary">

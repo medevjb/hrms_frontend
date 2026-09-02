@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-// Full-stack: the backend (php artisan serve --port=8000) must be running
+// Full-stack: the backend (php artisan serve, or Herd) must be running
 // alongside `npm run dev` for these to pass — playwright.config.ts only
 // starts the frontend.
 
@@ -19,11 +19,11 @@ test("a user can log in, see the shell, and log out", async ({ page }) => {
   await page.getByRole("button", { name: "Sign in" }).click();
 
   await expect(page).toHaveURL("http://localhost:3000/");
-  await expect(page.getByRole("heading", { name: "Overview" })).toBeVisible();
+  // A management role lands on the dashboard chooser.
+  await expect(page.getByRole("heading", { name: /Where to/ })).toBeVisible();
   await expect(page.locator('[data-slot="sidebar"]')).toBeVisible();
-  await expect(page.getByText("Admin", { exact: true })).toBeVisible();
 
-  await page.getByText("Admin", { exact: true }).click();
+  await page.getByRole("button", { name: "Account menu" }).click();
   await page.getByRole("menuitem", { name: "Log out" }).click();
 
   await expect(page).toHaveURL(/\/login$/);
