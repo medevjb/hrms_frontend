@@ -273,7 +273,10 @@ function Form({
             </div>
           </div>
 
-          <FormField label="Audience">
+          <FormField
+            label="Audience"
+            description={AUDIENCES.find((a) => a.value === audience)?.desc}
+          >
             <Select value={audience} onValueChange={(v) => setAudience(v as AnnouncementAudienceType)}>
               <SelectTrigger className="w-full">
                 <SelectValue />
@@ -281,10 +284,7 @@ function Form({
               <SelectContent>
                 {AUDIENCES.map((option) => (
                   <SelectItem key={option.value} value={option.value}>
-                    <span className="flex flex-col gap-0.5">
-                      <span className="font-medium">{option.label}</span>
-                      <span className="text-[11px] text-muted-foreground">{option.desc}</span>
-                    </span>
+                    {option.label}
                   </SelectItem>
                 ))}
               </SelectContent>
