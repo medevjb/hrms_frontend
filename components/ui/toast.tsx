@@ -35,7 +35,14 @@ function emit() {
 function push(type: ToastType, message: string, description?: string): string {
   const id = Math.random().toString(36).slice(2);
   const duration = type === "error" ? 6000 : 4000;
-  items = [{ id, type, message, description, duration }, ...items].slice(0, MAX_VISIBLE);
+  // Collapse duplicates: when the same message is already on screen (a
+  // component handler and the global mutation/query handler both firing,
+  // or a refetch loop), drop the old card and re-add with a fresh id so
+  // the timer restarts instead of stacking a second identical copy.
+  const deduped = items.filter(
+    (item) => !(item.type === type && item.message === message && item.description === description),
+  );
+  items = [{ id, type, message, description, duration }, ...deduped].slice(0, MAX_VISIBLE);
   emit();
   return id;
 }

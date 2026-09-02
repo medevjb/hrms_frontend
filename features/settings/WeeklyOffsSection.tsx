@@ -19,7 +19,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useCurrentUser } from "@/features/auth/CurrentUserContext";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { useRowSelection } from "@/hooks/use-row-selection";
-import { apiErrorMessage } from "@/lib/api-error";
 import { useAssignWeeklyOff, useEmployees, useUpdateEmployee } from "@/services/employees";
 import { useOrganizationSettings } from "@/services/settings";
 import { useTeams } from "@/services/teams";
@@ -39,14 +38,10 @@ function RowDaySelect({ employee }: { employee: Employee }) {
   return (
     <Select
       value={employee.weekend_day ?? DEFAULT}
-      onValueChange={async (value) => {
-        try {
-          await update.mutateAsync({
-            weekend_day: value === DEFAULT ? null : (value as Weekday),
-          });
-        } catch (caught) {
-          toast.error(apiErrorMessage(caught, "Couldn't update that person's weekly off."));
-        }
+      onValueChange={(value) => {
+        update.mutate({
+          weekend_day: value === DEFAULT ? null : (value as Weekday),
+        });
       }}
       disabled={update.isPending}
     >
@@ -93,19 +88,22 @@ export function WeeklyOffsSection() {
   const employees = data?.data ?? [];
   const selection = useRowSelection(employees, (employee) => employee.id);
 
-  async function applyBulk() {
+  function applyBulk() {
     if (!bulkDay || selection.count === 0) return;
-    try {
-      await assign.mutateAsync({
+    const count = selection.count;
+    assign.mutate(
+      {
         employee_ids: selection.selected.map((employee) => employee.id),
         weekend_day: bulkDay === DEFAULT ? null : (bulkDay as Weekday),
-      });
-      toast.success(`Weekly off updated for ${selection.count} ${selection.count === 1 ? "person" : "people"}.`);
-      selection.clear();
-      setBulkDay("");
-    } catch (caught) {
-      toast.error(apiErrorMessage(caught, "Couldn't update the weekly off."));
-    }
+      },
+      {
+        onSuccess: () => {
+          toast.success(`Weekly off updated for ${count} ${count === 1 ? "person" : "people"}.`);
+          selection.clear();
+          setBulkDay("");
+        },
+      },
+    );
   }
 
   const orgDefault = orgSettings?.default_weekend_day;

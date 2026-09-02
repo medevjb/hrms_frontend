@@ -12,7 +12,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useCurrentUser } from "@/features/auth/CurrentUserContext";
-import { ApiError } from "@/lib/api-error";
 import { formatTimeInTimezone } from "@/lib/format-time";
 import { useAttendanceToday, useCheckIn } from "@/services/attendance";
 
@@ -48,13 +47,8 @@ export function CheckInDialog() {
 
   const tz = user.organization.timezone;
 
-  async function handleCheckIn() {
-    try {
-      await checkIn.mutateAsync();
-      toast.success("Checked in");
-    } catch (caught) {
-      toast.error(caught instanceof ApiError ? caught.message : "Check-in failed");
-    }
+  function handleCheckIn() {
+    checkIn.mutate(undefined, { onSuccess: () => toast.success("Checked in") });
   }
 
   return (

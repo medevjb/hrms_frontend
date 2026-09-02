@@ -1,8 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { AlertCircleIcon } from "lucide-react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { DateTimePicker } from "@/components/ui/date-time-picker";
 import {
@@ -21,7 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { ApiError } from "@/lib/api-error";
+import { toast } from "@/components/ui/toast";
 import { useAdjustAttendance } from "@/services/attendance";
 import type { AttendanceRecord, AttendanceStatus } from "@/types/attendance";
 
@@ -42,33 +40,22 @@ function Form({ record, onClose }: { record: AttendanceRecord; onClose: () => vo
   const [checkOut, setCheckOut] = useState<string | null>(record.check_out);
   const [status, setStatus] = useState<AttendanceStatus>(record.status);
   const [reason, setReason] = useState("");
-  const [error, setError] = useState<string | null>(null);
 
-  async function handleSubmit(event: React.FormEvent) {
+  function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
-    setError(null);
-
-    try {
-      await adjust.mutateAsync({
-        check_in: checkIn,
-        check_out: checkOut,
-        status,
-        reason,
-      });
-      onClose();
-    } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Something went wrong. Please try again.");
-    }
+    adjust.mutate(
+      { check_in: checkIn, check_out: checkOut, status, reason },
+      {
+        onSuccess: () => {
+          toast.success("Attendance corrected");
+          onClose();
+        },
+      },
+    );
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {error && (
-        <Alert variant="destructive">
-          <AlertCircleIcon />
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
       <div className="grid gap-4 sm:grid-cols-2">
         <FormField label="Check-in" htmlFor="adjust_check_in" description="Your local time zone">
           <DateTimePicker id="adjust_check_in" value={checkIn} onChange={setCheckIn} />

@@ -5,10 +5,8 @@ import {
   AlertCircleIcon,
   AlertTriangleIcon,
   ArrowUpDownIcon,
-  BellIcon,
   BriefcaseIcon,
   CalendarIcon,
-  CheckCircle2Icon,
   ClockIcon,
   DollarSignIcon,
   EyeIcon,
@@ -39,7 +37,6 @@ import {
 import { StatusChip, type StatusTone } from "@/components/ui/status-chip";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useCurrentUser } from "@/features/auth/CurrentUserContext";
-import { apiErrorMessage } from "@/lib/api-error";
 import { useAnnouncements, useDeleteAnnouncement, usePublishAnnouncement } from "@/services/announcements";
 import type { Announcement, AnnouncementStatus, AnnouncementType } from "@/types/announcements";
 import { AnnouncementDetailDialog } from "./AnnouncementDetailDialog";
@@ -130,13 +127,10 @@ function PublishButton({ announcement }: { announcement: Announcement }) {
       size="sm"
       className="h-8 gap-1.5 text-xs text-emerald-700 border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 dark:text-emerald-400"
       disabled={publish.isPending}
-      onClick={async () => {
-        try {
-          await publish.mutateAsync();
-          toast.success("Announcement published successfully");
-        } catch {
-          toast.error("Could not publish announcement");
-        }
+      onClick={() => {
+        publish.mutate(undefined, {
+          onSuccess: () => toast.success("Announcement published successfully"),
+        });
       }}
     >
       <SendIcon className="size-3" />
@@ -596,12 +590,8 @@ export function AnnouncementsList({ mode }: { mode: "feed" | "manage" }) {
         destructive
         onConfirm={async () => {
           if (!pendingDelete) return;
-          try {
-            await deleteAnnouncement.mutateAsync(pendingDelete.id);
-            toast.success("Draft deleted successfully");
-          } catch (caught) {
-            toast.error(apiErrorMessage(caught, "Could not delete draft"));
-          }
+          await deleteAnnouncement.mutateAsync(pendingDelete.id);
+          toast.success("Draft deleted successfully");
         }}
       />
     </div>

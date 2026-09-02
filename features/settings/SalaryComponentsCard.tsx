@@ -28,7 +28,7 @@ import { StatusChip } from "@/components/ui/status-chip";
 import { StatusSwitch } from "@/components/ui/StatusSwitch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useCurrentUser } from "@/features/auth/CurrentUserContext";
-import { ApiError, apiErrorMessage } from "@/lib/api-error";
+import { ApiError } from "@/lib/api-error";
 import {
   useCreateSalaryComponent,
   useDeleteSalaryComponent,
@@ -47,12 +47,8 @@ function ComponentStatusSwitch({ component }: { component: SalaryComponent }) {
       disabled={component.type === "BASIC"}
       entityLabel={`the ${component.name} component`}
       onConfirm={async (next) => {
-        try {
-          await update.mutateAsync({ is_active: next });
-          toast.success(next ? "Component activated" : "Component deactivated");
-        } catch (caught) {
-          toast.error(apiErrorMessage(caught, "Could not update the component"));
-        }
+        await update.mutateAsync({ is_active: next });
+        toast.success(next ? "Component activated" : "Component deactivated");
       }}
     />
   );
@@ -73,12 +69,10 @@ function ComponentForm({
       ? { name: component.name, sort_order: component.sort_order }
       : { type: "ALLOWANCE", sort_order: 0 },
   );
-  const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
-    setError(null);
     setFieldErrors({});
     try {
       if (isEdit) {
@@ -89,15 +83,14 @@ function ComponentForm({
       toast.success(isEdit ? "Component updated" : "Component created");
       onClose();
     } catch (caught) {
+      // The failure toast is fired by the global mutation handler; here we
+      // only fan the server's field errors out under their inputs.
       if (caught instanceof ApiError) {
         setFieldErrors(
           Object.fromEntries(
             Object.entries(caught.errors ?? {}).map(([field, messages]) => [field, messages[0]]),
           ),
         );
-        setError(caught.message);
-      } else {
-        setError("Something went wrong. Please try again.");
       }
     }
   }
@@ -108,7 +101,6 @@ function ComponentForm({
         <DialogTitle>{isEdit ? "Edit salary component" : "New salary component"}</DialogTitle>
       </DialogHeader>
       <form onSubmit={submit} className="space-y-4">
-          {error && <p className="text-sm text-destructive">{error}</p>}
           {!isEdit && (
             <>
               <FormField
@@ -276,12 +268,8 @@ export function SalaryComponentsCard() {
         destructive
         onConfirm={async () => {
           if (!pendingDelete) return;
-          try {
-            await deleteComponent.mutateAsync(pendingDelete.id);
-            toast.success("Component deleted");
-          } catch (caught) {
-            toast.error(apiErrorMessage(caught, "Could not delete component"));
-          }
+          await deleteComponent.mutateAsync(pendingDelete.id);
+          toast.success("Component deleted");
         }}
       />
     </Card>

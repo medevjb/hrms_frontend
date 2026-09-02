@@ -19,7 +19,6 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -128,14 +127,13 @@ function Body({ announcement, onClose }: { announcement: Announcement; onClose: 
           <Button
             className="w-full sm:w-auto gap-2"
             disabled={markRead.isPending}
-            onClick={async () => {
-              try {
-                await markRead.mutateAsync(true);
-                toast.success("Announcement acknowledged");
-                onClose();
-              } catch {
-                toast.error("Could not acknowledge announcement");
-              }
+            onClick={() => {
+              markRead.mutate(true, {
+                onSuccess: () => {
+                  toast.success("Announcement acknowledged");
+                  onClose();
+                },
+              });
             }}
           >
             <CheckCircle2Icon className="size-4" />

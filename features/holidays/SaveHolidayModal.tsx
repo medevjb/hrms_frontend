@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { AlertCircleIcon, InfoIcon } from "lucide-react";
+import { InfoIcon } from "lucide-react";
 import { z } from "zod";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
+import { toast } from "@/components/ui/toast";
 import {
   Select,
   SelectContent,
@@ -73,7 +74,6 @@ function HolidayForm({
   const isEdit = Boolean(holiday);
   const createHoliday = useCreateHoliday();
   const updateHoliday = useUpdateHoliday(holiday?.id ?? 0);
-  const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [values, setValues] = useState(() => initialValues(holiday, initialDate));
 
@@ -83,7 +83,6 @@ function HolidayForm({
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
-    setError(null);
     setFieldErrors({});
 
     const parsed = schema.safeParse({ ...values, date: values.date ?? "" });
@@ -108,20 +107,21 @@ function HolidayForm({
     try {
       if (isEdit) {
         await updateHoliday.mutateAsync(input);
+        toast.success("Holiday updated");
       } else {
         await createHoliday.mutateAsync(input);
+        toast.success("Holiday created");
       }
       onClose();
     } catch (caught) {
+      // The failure toast is fired by the global mutation handler; here we
+      // only fan the server's field errors out under their inputs.
       if (caught instanceof ApiError) {
         setFieldErrors(
           Object.fromEntries(
             Object.entries(caught.errors ?? {}).map(([field, messages]) => [field, messages[0]]),
           ),
         );
-        setError(caught.message);
-      } else {
-        setError("Something went wrong. Please try again.");
       }
     }
   }
@@ -141,12 +141,6 @@ function HolidayForm({
               This holiday syncs from Google&rsquo;s Bangladesh calendar. Its name and date may be
               refreshed on the next sync; the type and active status you set here are kept.
             </AlertDescription>
-          </Alert>
-        )}
-        {error && (
-          <Alert variant="destructive">
-            <AlertCircleIcon />
-            <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
         <FormField label="Title" htmlFor="holiday_title" error={fieldErrors.title}>

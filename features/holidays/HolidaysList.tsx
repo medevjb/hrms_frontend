@@ -84,7 +84,6 @@ export function HolidaysList() {
 
     deleteHoliday.mutate(pendingDelete.id, {
       onSuccess: () => toast.success("Holiday deleted"),
-      onError: () => toast.error("Delete failed"),
       onSettled: () => setPendingDelete(null),
     });
   }

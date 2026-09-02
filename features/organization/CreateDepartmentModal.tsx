@@ -1,9 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { AlertCircleIcon } from "lucide-react";
 import { z } from "zod";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -14,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
+import { toast } from "@/components/ui/toast";
 import { ApiError } from "@/lib/api-error";
 import { useCreateDepartment } from "@/services/departments";
 import { EmployeeSelect } from "./EmployeeSelect";
@@ -30,7 +29,6 @@ export function CreateDepartmentModal({
   onClose: () => void;
 }) {
   const createDepartment = useCreateDepartment();
-  const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -40,13 +38,11 @@ export function CreateDepartmentModal({
     setName("");
     setDescription("");
     setOperationManagerId(null);
-    setError(null);
     setFieldErrors({});
   }
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
-    setError(null);
     setFieldErrors({});
 
     const parsed = schema.safeParse({ name });
@@ -61,18 +57,18 @@ export function CreateDepartmentModal({
         description: description || undefined,
         operation_manager_id: operationManagerId ? Number(operationManagerId) : null,
       });
+      toast.success("Department created");
       reset();
       onClose();
     } catch (caught) {
+      // The failure toast is fired by the global mutation handler; here we
+      // only fan the server's field errors out under their inputs.
       if (caught instanceof ApiError) {
         setFieldErrors(
           Object.fromEntries(
             Object.entries(caught.errors ?? {}).map(([field, messages]) => [field, messages[0]]),
           ),
         );
-        setError(caught.message);
-      } else {
-        setError("Something went wrong. Please try again.");
       }
     }
   }
@@ -84,12 +80,6 @@ export function CreateDepartmentModal({
           <DialogTitle>New department</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          {error && (
-            <Alert variant="destructive">
-              <AlertCircleIcon />
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
           <FormField label="Name" htmlFor="department_name" error={fieldErrors.name}>
             <Input id="department_name" value={name} onChange={(e) => setName(e.target.value)} />
           </FormField>

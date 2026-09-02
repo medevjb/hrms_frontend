@@ -14,7 +14,6 @@ import {
 } from "@/components/ui/dialog";
 import { FormField } from "@/components/ui/form-field";
 import { Textarea } from "@/components/ui/textarea";
-import { ApiError } from "@/lib/api-error";
 import { useApproveLeaveRequest, useDirectApproveLeaveRequest, useRejectLeaveRequest } from "@/services/leave";
 import type { LeaveRequest } from "@/types/leave";
 
@@ -43,15 +42,12 @@ function Form({
   const reject = useRejectLeaveRequest(leaveRequest.id);
   const directApprove = useDirectApproveLeaveRequest(leaveRequest.id);
   const [reason, setReason] = useState("");
-  const [error, setError] = useState<string | null>(null);
 
   const copy = COPY[mode];
   const pending = approve.isPending || reject.isPending || directApprove.isPending;
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
-    setError(null);
-
     try {
       if (mode === "approve") {
         await approve.mutateAsync(reason || undefined);
@@ -64,19 +60,13 @@ function Form({
         toast.success("Approved directly");
       }
       onClose();
-    } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Something went wrong. Please try again.");
+    } catch {
+      // The failure toast is fired by the global mutation handler.
     }
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {error && (
-        <Alert variant="destructive">
-          <AlertCircleIcon />
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
       <div className="rounded-lg border border-border bg-muted/40 p-3 text-sm">
         <p className="font-medium">{leaveRequest.employee.full_name}</p>
         <p className="text-muted-foreground">

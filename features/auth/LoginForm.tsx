@@ -3,14 +3,14 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AlertCircleIcon, ShieldCheckIcon } from "lucide-react";
+import { ShieldCheckIcon } from "lucide-react";
 import { z } from "zod";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PasswordInput } from "@/components/ui/password-input";
+import { toast } from "@/components/ui/toast";
 
 const credentialsSchema = z.object({
   email: z.string().min(1, "Email is required").email("Enter a valid email address"),
@@ -44,13 +44,11 @@ export function LoginForm() {
   const [recoveryCode, setRecoveryCode] = useState("");
   const [useRecoveryCode, setUseRecoveryCode] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   async function handleCredentialsSubmit(event: React.FormEvent) {
     event.preventDefault();
     setFieldErrors({});
-    setError(null);
 
     const parsed = credentialsSchema.safeParse({ email, password });
     if (!parsed.success) {
@@ -81,7 +79,7 @@ export function LoginForm() {
             Object.entries(data.errors ?? {}).map(([field, messages]) => [field, messages[0]]),
           ),
         );
-        setError(data.message ?? "Login failed. Please try again.");
+        toast.error(data.message ?? "Login failed. Please try again.");
         return;
       }
 
@@ -97,7 +95,6 @@ export function LoginForm() {
     if (stage.kind !== "two-factor") return;
 
     setSubmitting(true);
-    setError(null);
 
     try {
       const { response, data } = await postJson("/api/auth/two-factor-challenge", {
@@ -106,7 +103,7 @@ export function LoginForm() {
       });
 
       if (!response.ok) {
-        setError(data.message ?? "That code didn't work. Please try again.");
+        toast.error(data.message ?? "That code didn't work. Please try again.");
         return;
       }
 
@@ -135,13 +132,6 @@ export function LoginForm() {
             </p>
           </div>
         </div>
-
-        {error && (
-          <Alert variant="destructive">
-            <AlertCircleIcon />
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
 
         <form onSubmit={handleCodeSubmit} className="space-y-4">
           {useRecoveryCode ? (
@@ -175,10 +165,7 @@ export function LoginForm() {
           <button
             type="button"
             className="w-full text-center text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
-            onClick={() => {
-              setUseRecoveryCode((current) => !current);
-              setError(null);
-            }}
+            onClick={() => setUseRecoveryCode((current) => !current)}
           >
             {useRecoveryCode ? "Use an authentication code instead" : "Use a recovery code instead"}
           </button>
@@ -193,13 +180,6 @@ export function LoginForm() {
         <h1 className="font-heading text-2xl font-bold tracking-tight text-foreground">Sign in</h1>
         <p className="text-sm text-muted-foreground">Welcome back — enter your details to continue.</p>
       </div>
-
-      {error && (
-        <Alert variant="destructive">
-          <AlertCircleIcon />
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
 
       <form onSubmit={handleCredentialsSubmit} className="space-y-4">
         <FormField label="Email" htmlFor="email" error={fieldErrors.email}>

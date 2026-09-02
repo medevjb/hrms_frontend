@@ -1,9 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { AlertCircleIcon } from "lucide-react";
 import { toast } from "@/components/ui/toast";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -15,7 +13,6 @@ import {
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { ApiError } from "@/lib/api-error";
 import { useAdjustOvertime } from "@/services/overtime";
 import type { OvertimeRecord } from "@/types/overtime";
 
@@ -23,29 +20,22 @@ function Form({ record, onClose }: { record: OvertimeRecord; onClose: () => void
   const adjust = useAdjustOvertime(record.id);
   const [days, setDays] = useState(String(record.effective_overtime_days));
   const [reason, setReason] = useState("");
-  const [error, setError] = useState<string | null>(null);
 
-  async function handleSubmit(event: React.FormEvent) {
+  function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
-    setError(null);
-
-    try {
-      await adjust.mutateAsync({ overtime_days: Number(days), reason });
-      toast.success("Overtime adjusted");
-      onClose();
-    } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Something went wrong. Please try again.");
-    }
+    adjust.mutate(
+      { overtime_days: Number(days), reason },
+      {
+        onSuccess: () => {
+          toast.success("Overtime adjusted");
+          onClose();
+        },
+      },
+    );
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {error && (
-        <Alert variant="destructive">
-          <AlertCircleIcon />
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
       <div className="rounded-lg border border-border bg-muted/40 p-3 text-sm">
         <p className="font-medium">{record.employee.full_name}</p>
         <p className="text-muted-foreground">

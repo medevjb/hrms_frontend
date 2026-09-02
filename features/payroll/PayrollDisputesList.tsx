@@ -23,7 +23,6 @@ import {
 import { StatusChip } from "@/components/ui/status-chip";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
-import { ApiError } from "@/lib/api-error";
 import { formatMoney } from "@/lib/format-money";
 import { usePayrollDisputes, useResolveDispute } from "@/services/payroll";
 import type { PayrollDispute } from "@/types/payroll";
@@ -32,18 +31,18 @@ function ResolveDialog({ dispute, onClose }: { dispute: PayrollDispute | null; o
   const resolve = useResolveDispute(dispute?.id ?? 0);
   const [resolution, setResolution] = useState<"UPHELD" | "REJECTED">("REJECTED");
   const [note, setNote] = useState("");
-  const [error, setError] = useState<string | null>(null);
 
-  async function submit(event: React.FormEvent) {
+  function submit(event: React.FormEvent) {
     event.preventDefault();
-    setError(null);
-    try {
-      await resolve.mutateAsync({ resolution, note });
-      toast.success("Dispute resolved");
-      onClose();
-    } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Something went wrong.");
-    }
+    resolve.mutate(
+      { resolution, note },
+      {
+        onSuccess: () => {
+          toast.success("Dispute resolved");
+          onClose();
+        },
+      },
+    );
   }
 
   return (
@@ -54,7 +53,6 @@ function ResolveDialog({ dispute, onClose }: { dispute: PayrollDispute | null; o
         </DialogHeader>
         {dispute && (
           <form onSubmit={submit} className="space-y-4">
-            {error && <p className="text-sm text-destructive">{error}</p>}
             <div className="rounded-lg border border-border bg-muted/40 p-3 text-sm">
               <p className="font-medium">{dispute.entry?.employee.full_name}</p>
               <p className="text-muted-foreground">{dispute.reason}</p>

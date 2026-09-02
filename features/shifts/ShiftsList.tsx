@@ -15,7 +15,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useCurrentUser } from "@/features/auth/CurrentUserContext";
 import { useDisclosure } from "@/hooks/use-disclosure";
 import { useDeleteShift, useShifts, useUpdateShift } from "@/services/shifts";
-import { apiErrorMessage } from "@/lib/api-error";
 import type { Shift } from "@/types/shifts";
 import { SaveShiftModal } from "./SaveShiftModal";
 
@@ -28,12 +27,8 @@ function ShiftStatusSwitch({ shift, disabled }: { shift: Shift; disabled?: boole
       disabled={disabled}
       entityLabel={`the ${shift.name} shift`}
       onConfirm={async (next) => {
-        try {
-          await update.mutateAsync({ active: next });
-          toast.success(next ? "Shift activated" : "Shift deactivated");
-        } catch (caught) {
-          toast.error(apiErrorMessage(caught, "Could not update the shift"));
-        }
+        await update.mutateAsync({ active: next });
+        toast.success(next ? "Shift activated" : "Shift deactivated");
       }}
     />
   );
@@ -151,12 +146,8 @@ export function ShiftsList() {
         destructive
         onConfirm={async () => {
           if (!pendingDelete) return;
-          try {
-            await deleteShift.mutateAsync(pendingDelete.id);
-            toast.success("Shift deleted");
-          } catch (caught) {
-            toast.error(apiErrorMessage(caught, "Could not delete shift"));
-          }
+          await deleteShift.mutateAsync(pendingDelete.id);
+          toast.success("Shift deleted");
         }}
       />
     </>

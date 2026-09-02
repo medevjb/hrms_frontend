@@ -13,7 +13,6 @@ import { PageLoadingSkeleton } from "@/components/ui/PageLoadingSkeleton";
 import { StatusChip } from "@/components/ui/status-chip";
 import { Textarea } from "@/components/ui/textarea";
 import { useCurrentUser } from "@/features/auth/CurrentUserContext";
-import { ApiError } from "@/lib/api-error";
 import { formatMoney } from "@/lib/format-money";
 import {
   payslipDownloadUrl,
@@ -172,14 +171,13 @@ export function PayrollEntryDetailDialog({
                       variant="outline"
                       size="sm"
                       disabled={acknowledge.isPending}
-                      onClick={async () => {
-                        try {
-                          await acknowledge.mutateAsync();
-                          toast.success("Payslip confirmed");
-                          onClose();
-                        } catch (caught) {
-                          toast.error(caught instanceof ApiError ? caught.message : "Could not confirm");
-                        }
+                      onClick={() => {
+                        acknowledge.mutate(undefined, {
+                          onSuccess: () => {
+                            toast.success("Payslip confirmed");
+                            onClose();
+                          },
+                        });
                       }}
                     >
                       Confirm salary
@@ -210,14 +208,13 @@ export function PayrollEntryDetailDialog({
                     <Button
                       size="sm"
                       disabled={dispute.isPending || !disputeReason.trim()}
-                      onClick={async () => {
-                        try {
-                          await dispute.mutateAsync(disputeReason);
-                          toast.success("Issue reported — HR will review it");
-                          onClose();
-                        } catch (caught) {
-                          toast.error(caught instanceof ApiError ? caught.message : "Could not submit");
-                        }
+                      onClick={() => {
+                        dispute.mutate(disputeReason, {
+                          onSuccess: () => {
+                            toast.success("Issue reported — HR will review it");
+                            onClose();
+                          },
+                        });
                       }}
                     >
                       Submit

@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import {
-  AlertCircleIcon,
   CalendarIcon,
   DollarSignIcon,
   HistoryIcon,
@@ -10,7 +9,6 @@ import {
   TrendingUpIcon,
 } from "lucide-react";
 import { toast } from "@/components/ui/toast";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,7 +24,6 @@ import {
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { useCurrentUser } from "@/features/auth/CurrentUserContext";
-import { ApiError } from "@/lib/api-error";
 import { formatMoney } from "@/lib/format-money";
 import { useAssignSalary, useEmployeeSalary, useSalaryComponents } from "@/services/payroll";
 
@@ -45,11 +42,9 @@ function AssignDialog({
   const assign = useAssignSalary(employeeId);
   const [effectiveFrom, setEffectiveFrom] = useState<string | null>(null);
   const [amounts, setAmounts] = useState<Record<number, string>>(initial);
-  const [error, setError] = useState<string | null>(null);
 
-  async function submit(event: React.FormEvent) {
+  function submit(event: React.FormEvent) {
     event.preventDefault();
-    setError(null);
 
     if (!effectiveFrom) return;
 
@@ -57,13 +52,15 @@ function AssignDialog({
       .filter(([, amount]) => amount !== "" && Number(amount) > 0)
       .map(([id, amount]) => ({ salary_component_id: Number(id), amount }));
 
-    try {
-      await assign.mutateAsync({ effective_from: effectiveFrom, components: payload });
-      toast.success("Salary updated successfully");
-      onClose();
-    } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Something went wrong.");
-    }
+    assign.mutate(
+      { effective_from: effectiveFrom, components: payload },
+      {
+        onSuccess: () => {
+          toast.success("Salary updated successfully");
+          onClose();
+        },
+      },
+    );
   }
 
   return (
@@ -79,12 +76,6 @@ function AssignDialog({
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-4 pt-2">
-          {error && (
-            <Alert variant="destructive">
-              <AlertCircleIcon className="size-4" />
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
           <FormField label="Effective From Date" description="Must be on or after current active version date">
             <DatePicker value={effectiveFrom} onChange={setEffectiveFrom} />
           </FormField>

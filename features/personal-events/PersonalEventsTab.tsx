@@ -87,7 +87,6 @@ export function PersonalEventsTab() {
     if (!pendingDelete) return;
     deleteEvent.mutate(pendingDelete.id, {
       onSuccess: () => toast.success("Event removed"),
-      onError: () => toast.error("Couldn't remove the event"),
       onSettled: () => setPendingDelete(null),
     });
   }

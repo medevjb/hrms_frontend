@@ -11,7 +11,6 @@ import { PageLoadingSkeleton } from "@/components/ui/PageLoadingSkeleton";
 import { StatusChip } from "@/components/ui/status-chip";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useCurrentUser } from "@/features/auth/CurrentUserContext";
-import { ApiError } from "@/lib/api-error";
 import { formatMoney } from "@/lib/format-money";
 import {
   useGeneratePayroll,
@@ -55,14 +54,11 @@ export function PayrollPeriodDetail({ periodId }: { periodId: number }) {
   const next = NEXT_TRANSITION[period.status];
   const canAdvance = next && user.permissions.includes(next.permission);
 
-  async function runTransition() {
+  function runTransition() {
     if (!next) return;
-    try {
-      await transition.mutateAsync(next.transition);
-      toast.success(next.label);
-    } catch (caught) {
-      toast.error(caught instanceof ApiError ? caught.message : "Could not advance the period");
-    }
+    transition.mutate(next.transition, {
+      onSuccess: () => toast.success(next.label),
+    });
   }
 
   return (
@@ -87,13 +83,10 @@ export function PayrollPeriodDetail({ periodId }: { periodId: number }) {
               <Button
                 variant="outline"
                 disabled={generate.isPending}
-                onClick={async () => {
-                  try {
-                    await generate.mutateAsync();
-                    toast.success("Draft calculated");
-                  } catch (caught) {
-                    toast.error(caught instanceof ApiError ? caught.message : "Could not generate");
-                  }
+                onClick={() => {
+                  generate.mutate(undefined, {
+                    onSuccess: () => toast.success("Draft calculated"),
+                  });
                 }}
               >
                 {rows.length > 0 ? "Recalculate draft" : "Generate draft"}

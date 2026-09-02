@@ -34,7 +34,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useCurrentUser } from "@/features/auth/CurrentUserContext";
-import { ApiError } from "@/lib/api-error";
 import {
   documentDownloadUrl,
   useDeleteDocument,
@@ -83,23 +82,23 @@ function UploadDialog({
   const fileRef = useRef<HTMLInputElement>(null);
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState<DocumentCategory>("CONTRACT");
-  const [error, setError] = useState<string | null>(null);
 
-  async function submit(event: React.FormEvent) {
+  function submit(event: React.FormEvent) {
     event.preventDefault();
-    setError(null);
     const file = fileRef.current?.files?.[0];
     if (!file) {
-      setError("Please select a file to upload.");
+      toast.error("Please select a file to upload.");
       return;
     }
-    try {
-      await upload.mutateAsync({ title, category, file });
-      toast.success("Document uploaded successfully");
-      onClose();
-    } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Upload failed.");
-    }
+    upload.mutate(
+      { title, category, file },
+      {
+        onSuccess: () => {
+          toast.success("Document uploaded successfully");
+          onClose();
+        },
+      },
+    );
   }
 
   return (
@@ -115,7 +114,6 @@ function UploadDialog({
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-4 pt-2">
-          {error && <p className="text-sm font-medium text-destructive">{error}</p>}
           <FormField label="Document Title">
             <Input
               placeholder="e.g. Employment Contract 2026"
@@ -246,13 +244,10 @@ export function EmployeeDocumentsSection({ employeeId }: { employeeId: number })
                       size="icon"
                       className="size-8 text-muted-foreground hover:text-destructive"
                       disabled={del.isPending}
-                      onClick={async () => {
-                        try {
-                          await del.mutateAsync(doc.id);
-                          toast.success("Document deleted");
-                        } catch {
-                          toast.error("Could not delete document");
-                        }
+                      onClick={() => {
+                        del.mutate(doc.id, {
+                          onSuccess: () => toast.success("Document deleted"),
+                        });
                       }}
                       title="Delete document"
                     >

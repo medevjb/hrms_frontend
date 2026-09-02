@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
-  AlertCircleIcon,
   ArrowRightIcon,
   CheckCircle2Icon,
   CheckIcon,
@@ -13,11 +12,11 @@ import {
   XIcon,
 } from "lucide-react";
 import { z } from "zod";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
 import { PasswordInput } from "@/components/ui/password-input";
+import { toast } from "@/components/ui/toast";
 
 const schema = z
   .object({
@@ -47,7 +46,6 @@ export function ResetPasswordForm({ token, email }: { token: string; email: stri
   const [password, setPassword] = useState("");
   const [passwordConfirmation, setPasswordConfirmation] = useState("");
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
 
@@ -58,7 +56,6 @@ export function ResetPasswordForm({ token, email }: { token: string; email: stri
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     setFieldErrors({});
-    setError(null);
 
     const parsed = schema.safeParse({
       password,
@@ -88,10 +85,11 @@ export function ResetPasswordForm({ token, email }: { token: string; email: stri
 
       if (!response.ok) {
         const body = await response.json().catch(() => ({}));
-        setError(body.message ?? "That reset link is invalid or has expired.");
+        toast.error(body.message ?? "That reset link is invalid or has expired.");
         return;
       }
 
+      toast.success("Password updated");
       setSuccess(true);
     } finally {
       setSubmitting(false);
@@ -147,13 +145,6 @@ export function ResetPasswordForm({ token, email }: { token: string; email: stri
           </p>
         </div>
       </div>
-
-      {error && (
-        <Alert variant="destructive" className="rounded-2xl">
-          <AlertCircleIcon className="size-4" />
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <FormField label="New Password" htmlFor="password" error={fieldErrors.password}>

@@ -45,7 +45,6 @@ export function LeaveTypesManager() {
 
     deactivate.mutate(pendingDeactivate.id, {
       onSuccess: () => toast.success("Leave type deactivated"),
-      onError: () => toast.error("Deactivation failed"),
       onSettled: () => setPendingDeactivate(null),
     });
   }

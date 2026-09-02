@@ -1,9 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { AlertCircleIcon } from "lucide-react";
 import { toast } from "@/components/ui/toast";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -22,7 +20,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { ApiError } from "@/lib/api-error";
 import { useAdjustPayrollEntry } from "@/services/payroll";
 import type { PayrollAdjustmentType } from "@/types/payroll";
 
@@ -40,28 +37,22 @@ function Form({ entryId, onClose }: { entryId: number; onClose: () => void }) {
   const [label, setLabel] = useState("");
   const [amount, setAmount] = useState("");
   const [reason, setReason] = useState("");
-  const [error, setError] = useState<string | null>(null);
 
-  async function submit(event: React.FormEvent) {
+  function submit(event: React.FormEvent) {
     event.preventDefault();
-    setError(null);
-    try {
-      await adjust.mutateAsync({ type, label, amount, reason });
-      toast.success("Adjustment applied");
-      onClose();
-    } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Something went wrong.");
-    }
+    adjust.mutate(
+      { type, label, amount, reason },
+      {
+        onSuccess: () => {
+          toast.success("Adjustment applied");
+          onClose();
+        },
+      },
+    );
   }
 
   return (
     <form onSubmit={submit} className="space-y-4">
-      {error && (
-        <Alert variant="destructive">
-          <AlertCircleIcon />
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
       <FormField label="Type">
         <Select value={type} onValueChange={(v) => setType(v as PayrollAdjustmentType)}>
           <SelectTrigger className="w-full">

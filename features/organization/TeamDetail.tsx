@@ -1,9 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { AlertCircleIcon, Trash2Icon } from "lucide-react";
+import { Trash2Icon } from "lucide-react";
 import { toast } from "@/components/ui/toast";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,7 +17,6 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PageLoadingSkeleton } from "@/components/ui/PageLoadingSkeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ApiError } from "@/lib/api-error";
 import { useAddTeamMember, useRemoveTeamMember, useTeam, useTeamMembers } from "@/services/teams";
 import { EmployeeSelect } from "./EmployeeSelect";
 
@@ -29,7 +27,6 @@ export function TeamDetail({ teamId }: { teamId: number }) {
   const removeMember = useRemoveTeamMember(teamId);
 
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [pendingRemoval, setPendingRemoval] = useState<{ id: number; name: string } | null>(null);
 
   if (loadingTeam || loadingMembers) {
@@ -40,18 +37,17 @@ export function TeamDetail({ teamId }: { teamId: number }) {
     return <p className="text-sm text-muted-foreground">Team not found.</p>;
   }
 
-  async function handleAddMember() {
+  function handleAddMember() {
     if (!selectedEmployeeId) return;
-
-    setError(null);
-
-    try {
-      await addMember.mutateAsync({ employee_id: Number(selectedEmployeeId) });
-      setSelectedEmployeeId(null);
-      toast.success("Member added");
-    } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Could not add member.");
-    }
+    addMember.mutate(
+      { employee_id: Number(selectedEmployeeId) },
+      {
+        onSuccess: () => {
+          setSelectedEmployeeId(null);
+          toast.success("Member added");
+        },
+      },
+    );
   }
 
   function confirmRemoveMember() {
@@ -59,7 +55,6 @@ export function TeamDetail({ teamId }: { teamId: number }) {
 
     removeMember.mutate(pendingRemoval.id, {
       onSuccess: () => toast.success("Member removed"),
-      onError: () => toast.error("Could not remove member"),
       onSettled: () => setPendingRemoval(null),
     });
   }
@@ -81,13 +76,6 @@ export function TeamDetail({ teamId }: { teamId: number }) {
           Add
         </Button>
       </div>
-
-      {error && (
-        <Alert variant="destructive" className="mb-4">
-          <AlertCircleIcon />
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
 
       {!members || members.length === 0 ? (
         <EmptyState title="No members yet" description="Add someone to this team above." />

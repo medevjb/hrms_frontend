@@ -15,7 +15,6 @@ import { useCurrentUser } from "@/features/auth/CurrentUserContext";
 import { useDisclosure } from "@/hooks/use-disclosure";
 import { useDepartments } from "@/services/departments";
 import { useDeleteTeam, useTeams } from "@/services/teams";
-import { apiErrorMessage } from "@/lib/api-error";
 import type { Team } from "@/types/organization";
 import { CreateTeamModal } from "./CreateTeamModal";
 
@@ -115,12 +114,8 @@ export function DepartmentDetail({ departmentId }: { departmentId: number }) {
         destructive
         onConfirm={async () => {
           if (!pendingDelete) return;
-          try {
-            await deleteTeam.mutateAsync(pendingDelete.id);
-            toast.success("Team deleted");
-          } catch (caught) {
-            toast.error(apiErrorMessage(caught, "Could not delete team"));
-          }
+          await deleteTeam.mutateAsync(pendingDelete.id);
+          toast.success("Team deleted");
         }}
       />
     </>

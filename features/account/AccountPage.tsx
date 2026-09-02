@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CopyRow, Fact, RailLabel } from "@/components/ui/DetailRail";
 import { FormField } from "@/components/ui/form-field";
-import { FormStatus } from "@/components/ui/FormStatus";
 import { Input } from "@/components/ui/input";
 import { PageLoadingSkeleton } from "@/components/ui/PageLoadingSkeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -43,12 +42,7 @@ function RailAvatar({ profile }: { profile: Profile }) {
       toast.error("That image is over 3 MB. Choose a smaller one.");
       return;
     }
-    try {
-      await upload.mutateAsync(file);
-      toast.success("Photo updated.");
-    } catch (caught) {
-      toast.error(caught instanceof ApiError ? caught.message : "Couldn't upload that photo.");
-    }
+    upload.mutate(file, { onSuccess: () => toast.success("Photo updated.") });
   }
 
   return (
@@ -109,10 +103,9 @@ function RailAvatar({ profile }: { profile: Profile }) {
               <button
                 type="button"
                 onClick={() =>
-                  remove
-                    .mutateAsync()
-                    .then(() => toast.success("Photo removed."))
-                    .catch(() => toast.error("Couldn't remove the photo."))
+                  remove.mutate(undefined, {
+                    onSuccess: () => toast.success("Photo removed."),
+                  })
                 }
                 disabled={busy}
                 className="inline-flex items-center gap-1 text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
@@ -254,15 +247,11 @@ function ProfileForm({ profile }: { profile: Profile }) {
   const [name, setName] = useState(profile.name);
   const [phone, setPhone] = useState(emp?.phone ?? "");
   const [address, setAddress] = useState(emp?.address ?? "");
-  const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  const [saved, setSaved] = useState(false);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
-    setError(null);
     setFieldErrors({});
-    setSaved(false);
 
     const parsed = emp
       ? nameSchema.safeParse({ first_name: firstName, last_name: lastName })
@@ -287,22 +276,20 @@ function ProfileForm({ profile }: { profile: Profile }) {
             }
           : { name: name.trim() },
       );
-      setSaved(true);
+      toast.success("Profile saved");
     } catch (caught) {
+      // The failure toast is fired by the global mutation handler; here we
+      // only fan the server's field errors out under their inputs.
       if (caught instanceof ApiError) {
         setFieldErrors(
           Object.fromEntries(Object.entries(caught.errors ?? {}).map(([f, m]) => [f, m[0]])),
         );
-        setError(caught.message);
-      } else {
-        setError("Something went wrong. Please try again.");
       }
     }
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <FormStatus error={error} saved={saved} savedText="Profile saved." />
 
       {emp ? (
         <div className="grid gap-4 sm:grid-cols-2">
@@ -358,27 +345,20 @@ function EmergencyForm({ profile }: { profile: Profile }) {
   const update = useUpdateProfile();
   const [contactName, setContactName] = useState(profile.employee?.emergency_contact_name ?? "");
   const [contactPhone, setContactPhone] = useState(profile.employee?.emergency_contact_phone ?? "");
-  const [error, setError] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
 
-  async function handleSubmit(event: React.FormEvent) {
+  function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
-    setError(null);
-    setSaved(false);
-    try {
-      await update.mutateAsync({
+    update.mutate(
+      {
         emergency_contact_name: contactName.trim() || null,
         emergency_contact_phone: contactPhone.trim() || null,
-      });
-      setSaved(true);
-    } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Something went wrong. Please try again.");
-    }
+      },
+      { onSuccess: () => toast.success("Emergency contact saved") },
+    );
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <FormStatus error={error} saved={saved} savedText="Emergency contact saved." />
       <div className="grid gap-4 sm:grid-cols-2">
         <FormField label="Contact name" htmlFor="ec_name">
           <Input id="ec_name" value={contactName} onChange={(e) => setContactName(e.target.value)} />

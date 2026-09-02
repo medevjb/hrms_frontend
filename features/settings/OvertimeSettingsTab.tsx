@@ -1,8 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { AlertCircleIcon, CircleCheckIcon } from "lucide-react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
@@ -15,7 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { ApiError } from "@/lib/api-error";
+import { toast } from "@/components/ui/toast";
 import { useOvertimeSettings, useUpdateOvertimeSettings } from "@/services/settings";
 import type {
   OvertimeDailySalaryBasis,
@@ -59,43 +57,24 @@ function ToggleRow({
 
 function Form({ initial }: { initial: OvertimeSettings }) {
   const update = useUpdateOvertimeSettings();
-  const [error, setError] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
   const [values, setValues] = useState({
     ...initial,
     overtime_hourly_fixed_rate: initial.overtime_hourly_fixed_rate ?? "",
   });
 
-  async function handleSubmit(event: React.FormEvent) {
+  function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
-    setError(null);
-    setSaved(false);
-
-    try {
-      await update.mutateAsync({
+    update.mutate(
+      {
         ...values,
         overtime_hourly_fixed_rate: values.overtime_hourly_fixed_rate || null,
-      });
-      setSaved(true);
-    } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Something went wrong. Please try again.");
-    }
+      },
+      { onSuccess: () => toast.success("Overtime settings saved") },
+    );
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {error && (
-        <Alert variant="destructive">
-          <AlertCircleIcon />
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-      {saved && (
-        <Alert className="border-emerald-200 bg-emerald-50 dark:border-emerald-900 dark:bg-emerald-500/10">
-          <CircleCheckIcon className="text-emerald-600 dark:text-emerald-400" />
-          <AlertDescription className="text-emerald-800 dark:text-emerald-300">Saved.</AlertDescription>
-        </Alert>
-      )}
       <ToggleRow
         id="overtime_enabled"
         label="Overtime enabled"

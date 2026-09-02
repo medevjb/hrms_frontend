@@ -5,10 +5,9 @@ import { useRouter } from "next/navigation";
 import { ImageIcon, Trash2Icon, UploadIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
-import { FormStatus } from "@/components/ui/FormStatus";
 import { Input } from "@/components/ui/input";
 import { PageLoadingSkeleton } from "@/components/ui/PageLoadingSkeleton";
-import { ApiError } from "@/lib/api-error";
+import { toast } from "@/components/ui/toast";
 import { proxyMedia } from "@/lib/media";
 import { useBrandingSettings, useUpdateBranding } from "@/services/settings";
 import type { Branding } from "@/types/settings";
@@ -84,8 +83,6 @@ function ImagePicker({
 function Form({ initial }: { initial: Branding }) {
   const update = useUpdateBranding();
   const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
   const [companyName, setCompanyName] = useState(initial.company_name);
   const [appTitle, setAppTitle] = useState(
     initial.app_title === initial.company_name ? "" : initial.app_title,
@@ -99,33 +96,30 @@ function Form({ initial }: { initial: Branding }) {
     cleared: false,
   });
 
-  async function handleSubmit(event: React.FormEvent) {
+  function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
-    setError(null);
-    setSaved(false);
-
-    try {
-      await update.mutateAsync({
+    update.mutate(
+      {
         company_name: companyName,
         app_title: appTitle.trim() || null,
         logo: logo.file,
         favicon: favicon.file,
         remove_logo: logo.cleared && !logo.file,
         remove_favicon: favicon.cleared && !favicon.file,
-      });
-      setLogo({ file: null, cleared: false });
-      setFavicon({ file: null, cleared: false });
-      setSaved(true);
-      router.refresh();
-    } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Something went wrong. Please try again.");
-    }
+      },
+      {
+        onSuccess: () => {
+          setLogo({ file: null, cleared: false });
+          setFavicon({ file: null, cleared: false });
+          toast.success("Branding saved");
+          router.refresh();
+        },
+      },
+    );
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <FormStatus error={error} saved={saved} />
-
       <FormField label="Company name" htmlFor="brand_company">
         <Input
           id="brand_company"

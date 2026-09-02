@@ -165,6 +165,9 @@ export function useChangeEmployeeStatus() {
   const queryClient = useQueryClient();
 
   return useMutation({
+    // Runs one-per-row in a bulk change; ChangeEmployeeStatusDialog reports
+    // its own single/summary feedback, so opt out of the global error toast.
+    meta: { skipErrorToast: true },
     mutationFn: ({ id, ...body }: { id: number; status: EmployeeStatus; reason: string }) =>
       browserFetch<Employee>(`/employees/${id}/status`, { method: "PATCH", body }),
     onSuccess: () => {
@@ -202,6 +205,9 @@ export function useDeleteEmployee() {
   const queryClient = useQueryClient();
 
   return useMutation({
+    // Runs one-per-row in a bulk delete; EmployeesTable reports its own
+    // summary, so opt out of the global error toast.
+    meta: { skipErrorToast: true },
     mutationFn: (id: number) => browserFetch<void>(`/employees/${id}`, { method: "DELETE" }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["employees"] }),
   });

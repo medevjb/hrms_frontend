@@ -15,7 +15,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useCurrentUser } from "@/features/auth/CurrentUserContext";
 import { useDeleteDepartment, useDepartments } from "@/services/departments";
 import { useDisclosure } from "@/hooks/use-disclosure";
-import { apiErrorMessage } from "@/lib/api-error";
 import type { Department } from "@/types/organization";
 import { CreateDepartmentModal } from "./CreateDepartmentModal";
 
@@ -118,12 +117,8 @@ export function DepartmentsList() {
         destructive
         onConfirm={async () => {
           if (!pendingDelete) return;
-          try {
-            await deleteDepartment.mutateAsync(pendingDelete.id);
-            toast.success("Department deleted");
-          } catch (caught) {
-            toast.error(apiErrorMessage(caught, "Could not delete department"));
-          }
+          await deleteDepartment.mutateAsync(pendingDelete.id);
+          toast.success("Department deleted");
         }}
       />
     </>

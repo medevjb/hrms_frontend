@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
-import { FormStatus } from "@/components/ui/FormStatus";
 import { Input } from "@/components/ui/input";
 import { PageLoadingSkeleton } from "@/components/ui/PageLoadingSkeleton";
 import {
@@ -14,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ApiError } from "@/lib/api-error";
+import { toast } from "@/components/ui/toast";
 import { useOrganizationSettings, useUpdateOrganizationSettings } from "@/services/settings";
 import type { OrganizationSettingsData, Weekday } from "@/types/settings";
 import { WEEKDAYS } from "@/types/settings";
@@ -26,8 +25,6 @@ function titleCase(value: string): string {
 function Form({ initial }: { initial: OrganizationSettingsData }) {
   const router = useRouter();
   const update = useUpdateOrganizationSettings();
-  const [error, setError] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
   const [values, setValues] = useState({
     company_name: initial.company_name,
     timezone: initial.timezone,
@@ -37,27 +34,21 @@ function Form({ initial }: { initial: OrganizationSettingsData }) {
     reporting_month_cutoff_day: initial.reporting_month_cutoff_day,
   });
 
-  async function handleSubmit(event: React.FormEvent) {
+  function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
-    setError(null);
-    setSaved(false);
-
-    try {
-      await update.mutateAsync(values);
-      setSaved(true);
-      // timezone / reporting-month ride on the SSR session payload
-      // (`user.organization`); re-run the layout so every open surface
-      // picks up the new boundaries without a hard reload.
-      router.refresh();
-    } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Something went wrong. Please try again.");
-    }
+    update.mutate(values, {
+      onSuccess: () => {
+        toast.success("Organization settings saved");
+        // timezone / reporting-month ride on the SSR session payload
+        // (`user.organization`); re-run the layout so every open surface
+        // picks up the new boundaries without a hard reload.
+        router.refresh();
+      },
+    });
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <FormStatus error={error} saved={saved} />
-
       <FormField label="Company name" htmlFor="company_name">
         <Input
           id="company_name"

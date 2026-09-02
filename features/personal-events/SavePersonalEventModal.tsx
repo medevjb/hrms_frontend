@@ -1,9 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { AlertCircleIcon } from "lucide-react";
 import { z } from "zod";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { DatePicker } from "@/components/ui/date-picker";
 import {
@@ -16,6 +14,7 @@ import {
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { toast } from "@/components/ui/toast";
 import { ApiError } from "@/lib/api-error";
 import { useCreatePersonalEvent, useUpdatePersonalEvent } from "@/services/personal-events";
 import type { PersonalEvent } from "@/types/personal-events";
@@ -59,7 +58,6 @@ function PersonalEventForm({
   const isEdit = Boolean(event);
   const createEvent = useCreatePersonalEvent();
   const updateEvent = useUpdatePersonalEvent(event?.id ?? 0);
-  const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [values, setValues] = useState(() => initialValues(event, initialRange));
 
@@ -69,7 +67,6 @@ function PersonalEventForm({
 
   async function handleSubmit(submitEvent: React.FormEvent) {
     submitEvent.preventDefault();
-    setError(null);
     setFieldErrors({});
 
     const parsed = schema.safeParse({
@@ -96,20 +93,21 @@ function PersonalEventForm({
     try {
       if (isEdit) {
         await updateEvent.mutateAsync(input);
+        toast.success("Event updated");
       } else {
         await createEvent.mutateAsync(input);
+        toast.success("Event created");
       }
       onClose();
     } catch (caught) {
+      // The failure toast is fired by the global mutation handler; here we
+      // only fan the server's field errors out under their inputs.
       if (caught instanceof ApiError) {
         setFieldErrors(
           Object.fromEntries(
             Object.entries(caught.errors ?? {}).map(([field, messages]) => [field, messages[0]]),
           ),
         );
-        setError(caught.message);
-      } else {
-        setError("Something went wrong. Please try again.");
       }
     }
   }
@@ -122,12 +120,6 @@ function PersonalEventForm({
         <DialogTitle>{isEdit ? "Edit event" : "New personal event"}</DialogTitle>
       </DialogHeader>
       <form onSubmit={handleSubmit} className="space-y-4">
-        {error && (
-          <Alert variant="destructive">
-            <AlertCircleIcon />
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
         <FormField label="Title" htmlFor="event_title" error={fieldErrors.title}>
           <Input
             id="event_title"

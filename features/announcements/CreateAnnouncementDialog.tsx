@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import {
-  AlertCircleIcon,
   AlertTriangleIcon,
   BriefcaseIcon,
   CalendarIcon,
@@ -17,7 +16,6 @@ import {
   UsersIcon,
 } from "lucide-react";
 import { toast } from "@/components/ui/toast";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -155,7 +153,6 @@ function Form({ onClose }: { onClose: () => void }) {
   const [ackRequired, setAckRequired] = useState(false);
   const [publishAt, setPublishAt] = useState<string | null>(null);
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   function toggleTarget(id: number) {
@@ -165,7 +162,6 @@ function Form({ onClose }: { onClose: () => void }) {
   }
 
   async function handleSave(shouldPublishDirectly: boolean) {
-    setError(null);
     setFieldErrors({});
 
     try {
@@ -188,13 +184,12 @@ function Form({ onClose }: { onClose: () => void }) {
       }
       onClose();
     } catch (caught) {
+      // The failure toast is fired by the global mutation handler; here we
+      // only fan the server's field errors out under their inputs.
       if (caught instanceof ApiError) {
         setFieldErrors(
           Object.fromEntries(Object.entries(caught.errors ?? {}).map(([f, m]) => [f, m[0]])),
         );
-        setError(caught.message);
-      } else {
-        setError("Something went wrong. Please try again.");
       }
     }
   }
@@ -214,13 +209,6 @@ function Form({ onClose }: { onClose: () => void }) {
         </TabsList>
 
         <TabsContent value="edit" className="space-y-4 pt-3">
-          {error && (
-            <Alert variant="destructive">
-              <AlertCircleIcon className="size-4" />
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-
           <div className="space-y-2">
             <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
               Announcement Category

@@ -1,8 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { AlertCircleIcon } from "lucide-react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -21,6 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { toast } from "@/components/ui/toast";
 import { ApiError } from "@/lib/api-error";
 import { useCreateLeaveType, useUpdateLeaveType, type SaveLeaveTypeInput } from "@/services/leave";
 import type { LeaveType } from "@/types/leave";
@@ -61,7 +60,6 @@ function Form({ leaveType, onClose }: { leaveType?: LeaveType; onClose: () => vo
   const isEdit = Boolean(leaveType);
   const createLeaveType = useCreateLeaveType();
   const updateLeaveType = useUpdateLeaveType(leaveType?.id ?? 0);
-  const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [values, setValues] = useState<SaveLeaveTypeInput>(() => initialValues(leaveType));
 
@@ -71,22 +69,22 @@ function Form({ leaveType, onClose }: { leaveType?: LeaveType; onClose: () => vo
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
-    setError(null);
     setFieldErrors({});
 
     try {
       if (isEdit) {
         await updateLeaveType.mutateAsync(values);
+        toast.success("Leave type updated");
       } else {
         await createLeaveType.mutateAsync(values);
+        toast.success("Leave type created");
       }
       onClose();
     } catch (caught) {
+      // The failure toast is fired by the global mutation handler; here we
+      // only fan the server's field errors out under their inputs.
       if (caught instanceof ApiError) {
         setFieldErrors(Object.fromEntries(Object.entries(caught.errors ?? {}).map(([f, m]) => [f, m[0]])));
-        setError(caught.message);
-      } else {
-        setError("Something went wrong. Please try again.");
       }
     }
   }
@@ -99,12 +97,6 @@ function Form({ leaveType, onClose }: { leaveType?: LeaveType; onClose: () => vo
         <DialogTitle>{isEdit ? "Edit leave type" : "New leave type"}</DialogTitle>
       </DialogHeader>
       <form onSubmit={handleSubmit} className="space-y-4">
-        {error && (
-          <Alert variant="destructive">
-            <AlertCircleIcon />
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
         <div className="grid grid-cols-2 gap-4">
           <FormField label="Name" htmlFor="leave_type_name" error={fieldErrors.name}>
             <Input id="leave_type_name" value={values.name} onChange={(e) => set("name", e.target.value)} />

@@ -33,7 +33,6 @@ export function SyncBangladeshHolidaysButton() {
         ].filter(Boolean);
         toast.success(`Bangladesh holidays synced — ${parts.join(", ")}`);
       },
-      onError: () => toast.error("Couldn't reach the Google holiday calendar"),
     });
   }
 

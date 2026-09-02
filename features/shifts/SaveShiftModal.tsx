@@ -1,9 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { AlertCircleIcon } from "lucide-react";
 import { z } from "zod";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -15,6 +13,7 @@ import {
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import { toast } from "@/components/ui/toast";
 import { ApiError } from "@/lib/api-error";
 import { useCreateShift, useUpdateShift } from "@/services/shifts";
 import type { Shift } from "@/types/shifts";
@@ -65,7 +64,6 @@ function ShiftForm({ shift, onClose }: { shift?: Shift; onClose: () => void }) {
   const isEdit = Boolean(shift);
   const createShift = useCreateShift();
   const updateShift = useUpdateShift(shift?.id ?? 0);
-  const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [values, setValues] = useState(() => initialValues(shift));
 
@@ -75,7 +73,6 @@ function ShiftForm({ shift, onClose }: { shift?: Shift; onClose: () => void }) {
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
-    setError(null);
     setFieldErrors({});
 
     const parsed = schema.safeParse(values);
@@ -103,20 +100,21 @@ function ShiftForm({ shift, onClose }: { shift?: Shift; onClose: () => void }) {
     try {
       if (isEdit) {
         await updateShift.mutateAsync(input);
+        toast.success("Shift updated");
       } else {
         await createShift.mutateAsync(input);
+        toast.success("Shift created");
       }
       onClose();
     } catch (caught) {
+      // The failure toast is fired by the global mutation handler; here we
+      // only fan the server's field errors out under their inputs.
       if (caught instanceof ApiError) {
         setFieldErrors(
           Object.fromEntries(
             Object.entries(caught.errors ?? {}).map(([field, messages]) => [field, messages[0]]),
           ),
         );
-        setError(caught.message);
-      } else {
-        setError("Something went wrong. Please try again.");
       }
     }
   }
@@ -130,12 +128,6 @@ function ShiftForm({ shift, onClose }: { shift?: Shift; onClose: () => void }) {
         <DialogTitle>{isEdit ? "Edit shift" : "New shift"}</DialogTitle>
       </DialogHeader>
       <form onSubmit={handleSubmit} className="space-y-4">
-        {error && (
-          <Alert variant="destructive">
-            <AlertCircleIcon />
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
         <FormField label="Name" htmlFor="shift_name" error={fieldErrors.name}>
           <Input id="shift_name" value={values.name} onChange={(e) => set("name", e.target.value)} />
         </FormField>

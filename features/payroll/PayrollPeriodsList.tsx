@@ -18,7 +18,6 @@ import { PageLoadingSkeleton } from "@/components/ui/PageLoadingSkeleton";
 import { StatusChip, type StatusTone } from "@/components/ui/status-chip";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useCurrentUser } from "@/features/auth/CurrentUserContext";
-import { ApiError } from "@/lib/api-error";
 import { formatMoney } from "@/lib/format-money";
 import { useCreatePayrollPeriod, usePayrollPeriods } from "@/services/payroll";
 import type { PayrollPeriodStatus } from "@/types/payroll";
@@ -39,18 +38,18 @@ function CreatePeriodDialog({ opened, onClose }: { opened: boolean; onClose: () 
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
-  const [error, setError] = useState<string | null>(null);
 
-  async function submit(event: React.FormEvent) {
+  function submit(event: React.FormEvent) {
     event.preventDefault();
-    setError(null);
-    try {
-      await create.mutateAsync({ year, month });
-      toast.success("Period created");
-      onClose();
-    } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Something went wrong.");
-    }
+    create.mutate(
+      { year, month },
+      {
+        onSuccess: () => {
+          toast.success("Period created");
+          onClose();
+        },
+      },
+    );
   }
 
   return (
@@ -60,7 +59,6 @@ function CreatePeriodDialog({ opened, onClose }: { opened: boolean; onClose: () 
           <DialogTitle>New payroll period</DialogTitle>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-4">
-          {error && <p className="text-sm text-destructive">{error}</p>}
           <div className="grid grid-cols-2 gap-4">
             <FormField label="Year">
               <Input type="number" value={year} onChange={(e) => setYear(Number(e.target.value))} />

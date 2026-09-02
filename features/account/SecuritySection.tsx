@@ -2,10 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertCircleIcon, ShieldCheckIcon, ShieldIcon } from "lucide-react";
+import { ShieldCheckIcon, ShieldIcon } from "lucide-react";
 import { toast } from "@/components/ui/toast";
 import { z } from "zod";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
 import { PageLoadingSkeleton } from "@/components/ui/PageLoadingSkeleton";
@@ -55,12 +54,10 @@ function PasswordForm() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirmation, setPasswordConfirmation] = useState("");
-  const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
-    setError(null);
     setFieldErrors({});
 
     const parsed = schema.safeParse({
@@ -84,13 +81,12 @@ function PasswordForm() {
       router.push("/login");
       router.refresh();
     } catch (caught) {
+      // The failure toast is fired by the global mutation handler; here we
+      // only fan the server's field errors out under their inputs.
       if (caught instanceof ApiError) {
         setFieldErrors(
           Object.fromEntries(Object.entries(caught.errors ?? {}).map(([f, m]) => [f, m[0]])),
         );
-        setError(caught.message);
-      } else {
-        setError("Something went wrong. Please try again.");
       }
     }
   }
@@ -105,13 +101,6 @@ function PasswordForm() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5 pt-1">
-        {error && (
-          <Alert variant="destructive">
-            <AlertCircleIcon />
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-
         <FormField
           label="Current password"
           htmlFor="current_password"

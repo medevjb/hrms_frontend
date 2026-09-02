@@ -1,9 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { AlertCircleIcon, UsersIcon } from "lucide-react";
+import { UsersIcon } from "lucide-react";
 import { toast } from "@/components/ui/toast";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { FormField } from "@/components/ui/form-field";
@@ -18,7 +17,6 @@ import {
 } from "@/components/ui/select";
 import { SettingsCard } from "@/components/ui/SettingsCard";
 import { Textarea } from "@/components/ui/textarea";
-import { ApiError } from "@/lib/api-error";
 import { useBulkAdjustLeaveBalances, useLeaveTypes } from "@/services/leave";
 import type { BulkLeaveBalanceMode } from "@/types/leave";
 
@@ -36,7 +34,6 @@ export function BulkLeaveBalanceCard() {
   const [mode, setMode] = useState<BulkLeaveBalanceMode>("GRANT");
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
-  const [error, setError] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   if (isLoading) {
@@ -51,25 +48,21 @@ export function BulkLeaveBalanceCard() {
   const canSubmit = Boolean(leaveTypeId) && amountValid && note.trim() !== "";
 
   async function apply() {
-    setError(null);
-    try {
-      const result = await bulk.mutateAsync({
-        leave_type_id: Number(leaveTypeId),
-        mode,
-        amount: needsAmount ? parsedAmount : undefined,
-        note: note.trim(),
-      });
-      toast.success(
-        result.affected === 0
-          ? "Everyone was already on that balance — nothing changed."
-          : `Updated ${result.affected} employee${result.affected === 1 ? "" : "s"}.`,
-      );
-      setAmount("");
-      setNote("");
-    } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Something went wrong. Please try again.");
-      throw caught;
-    }
+    // A rejection propagates so ConfirmDialog stays open; the failure toast
+    // is fired by the global mutation handler.
+    const result = await bulk.mutateAsync({
+      leave_type_id: Number(leaveTypeId),
+      mode,
+      amount: needsAmount ? parsedAmount : undefined,
+      note: note.trim(),
+    });
+    toast.success(
+      result.affected === 0
+        ? "Everyone was already on that balance — nothing changed."
+        : `Updated ${result.affected} employee${result.affected === 1 ? "" : "s"}.`,
+    );
+    setAmount("");
+    setNote("");
   }
 
   const summary = selectedType
@@ -86,13 +79,6 @@ export function BulkLeaveBalanceCard() {
       description="A one-shot leave-balance change for the whole active workforce. Each employee gets their own audit entry, so it can be undone per person."
     >
       <div className="space-y-4">
-        {error && (
-          <Alert variant="destructive">
-            <AlertCircleIcon />
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-
         <FormField label="Leave type">
           <Select value={leaveTypeId} onValueChange={setLeaveTypeId}>
             <SelectTrigger className="w-full">

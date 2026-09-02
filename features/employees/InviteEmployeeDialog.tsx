@@ -1,10 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { AlertCircleIcon } from "lucide-react";
 import { toast } from "@/components/ui/toast";
 import { z } from "zod";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { DatePicker } from "@/components/ui/date-picker";
 import {
@@ -46,7 +44,6 @@ const schema = z.object({
 
 function Form({ onClose }: { onClose: () => void }) {
   const createEmployee = useCreateEmployee();
-  const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const [email, setEmail] = useState("");
@@ -59,7 +56,6 @@ function Form({ onClose }: { onClose: () => void }) {
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
-    setError(null);
     setFieldErrors({});
 
     const parsed = schema.safeParse({
@@ -88,27 +84,20 @@ function Form({ onClose }: { onClose: () => void }) {
       toast.success(`Invitation sent to ${parsed.data.first_name} ${parsed.data.last_name}`);
       onClose();
     } catch (caught) {
+      // The failure toast is fired by the global mutation handler; here we
+      // only fan the server's field errors out under their inputs.
       if (caught instanceof ApiError) {
         setFieldErrors(
           Object.fromEntries(
             Object.entries(caught.errors ?? {}).map(([field, messages]) => [field, messages[0]]),
           ),
         );
-        setError(caught.message);
-      } else {
-        setError("Something went wrong. Please try again.");
       }
     }
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {error && (
-        <Alert variant="destructive">
-          <AlertCircleIcon />
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
       <div className="grid gap-4 sm:grid-cols-2">
         <FormField label="First name" htmlFor="first_name" error={fieldErrors.first_name}>
           <Input

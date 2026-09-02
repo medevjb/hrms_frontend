@@ -310,7 +310,6 @@ export function LeaveRequestDetailSheet({
               toast.success("Leave request cancelled");
               onClose();
             },
-            onError: () => toast.error("Cancel failed"),
           });
         }}
       />

@@ -15,7 +15,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ApiError } from "@/lib/api-error";
 import { useLatePenaltyRules, useSaveLatePenaltyRules } from "@/services/late-penalty-rules";
 import type { LatePenaltyDeductionMode, LatePenaltyOutcome } from "@/types/settings";
 
@@ -59,10 +58,10 @@ export function LatePenaltyRulesCard() {
     setEditing(true);
   }
 
-  async function submit() {
+  function submit() {
     if (!effectiveFrom) return;
-    try {
-      await save.mutateAsync({
+    save.mutate(
+      {
         effective_from: effectiveFrom,
         tiers: tiers.map((tier) => ({
           late_days_threshold: tier.late_days_threshold,
@@ -70,12 +69,14 @@ export function LatePenaltyRulesCard() {
           deduction_mode: tier.outcome === "DEDUCTION" ? tier.deduction_mode : null,
           deduction_value: tier.outcome === "DEDUCTION" ? tier.deduction_value : null,
         })),
-      });
-      toast.success("Late-penalty policy saved");
-      setEditing(false);
-    } catch (caught) {
-      toast.error(caught instanceof ApiError ? caught.message : "Could not save");
-    }
+      },
+      {
+        onSuccess: () => {
+          toast.success("Late-penalty policy saved");
+          setEditing(false);
+        },
+      },
+    );
   }
 
   function patchTier(index: number, patch: Partial<DraftTier>) {

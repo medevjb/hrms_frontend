@@ -13,7 +13,6 @@ import {
   useCheckOut,
   useAttendanceMonth,
 } from "@/services/attendance";
-import { ApiError } from "@/lib/api-error";
 import { formatTimeInTimezone } from "@/lib/format-time";
 import { SubmitLeaveRequestDialog } from "@/features/leave/SubmitLeaveRequestDialog";
 import { AdjustAttendanceDialog } from "@/features/attendance/AdjustAttendanceDialog";
@@ -148,22 +147,16 @@ export function SelfDashboard() {
     },
   };
 
-  async function handleCheckIn() {
-    try {
-      await checkIn.mutateAsync();
-      toast.success("Checked in. Have a good day.");
-    } catch (caught) {
-      toast.error(caught instanceof ApiError ? caught.message : "Could not check in.");
-    }
+  function handleCheckIn() {
+    checkIn.mutate(undefined, {
+      onSuccess: () => toast.success("Checked in. Have a good day."),
+    });
   }
 
-  async function handleCheckOut() {
-    try {
-      await checkOut.mutateAsync();
-      toast.success("Checked out. See you tomorrow.");
-    } catch (caught) {
-      toast.error(caught instanceof ApiError ? caught.message : "Could not check out.");
-    }
+  function handleCheckOut() {
+    checkOut.mutate(undefined, {
+      onSuccess: () => toast.success("Checked out. See you tomorrow."),
+    });
   }
 
   function handleDayCorrection(day: CalendarDayItem) {

@@ -1,9 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { AlertCircleIcon } from "lucide-react";
 import { toast } from "@/components/ui/toast";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { DatePicker } from "@/components/ui/date-picker";
 import {
@@ -15,7 +13,6 @@ import {
 } from "@/components/ui/dialog";
 import { FormField } from "@/components/ui/form-field";
 import { Textarea } from "@/components/ui/textarea";
-import { ApiError } from "@/lib/api-error";
 import { useApproveHolidayNotice, useDismissHolidayNotice } from "@/services/holiday-notices";
 import type { HolidayNotice } from "@/types/holidays";
 
@@ -26,14 +23,11 @@ function Form({ notice, onClose }: { notice: HolidayNotice; onClose: () => void 
   const [message, setMessage] = useState(notice.message);
   const [closureNote, setClosureNote] = useState(notice.closure_note ?? "");
   const [returnDate, setReturnDate] = useState<string | null>(notice.return_date);
-  const [error, setError] = useState<string | null>(null);
 
   const pending = approve.isPending || dismiss.isPending;
 
   async function handleApprove(event: React.FormEvent) {
     event.preventDefault();
-    setError(null);
-
     try {
       await approve.mutateAsync({
         message,
@@ -42,20 +36,13 @@ function Form({ notice, onClose }: { notice: HolidayNotice; onClose: () => void 
       });
       toast.success("Notice published — employees have been notified");
       onClose();
-    } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Something went wrong. Please try again.");
+    } catch {
+      // The failure toast is fired by the global mutation handler.
     }
   }
 
   return (
     <form onSubmit={handleApprove} className="space-y-4">
-      {error && (
-        <Alert variant="destructive">
-          <AlertCircleIcon />
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-
       <div className="rounded-lg border border-border bg-muted/40 p-3 text-sm">
         <p className="font-medium">{notice.holiday.title}</p>
         <p className="text-muted-foreground">
@@ -90,14 +77,13 @@ function Form({ notice, onClose }: { notice: HolidayNotice; onClose: () => void 
           type="button"
           variant="ghost"
           disabled={pending}
-          onClick={async () => {
-            try {
-              await dismiss.mutateAsync();
-              toast.success("Notice dismissed");
-              onClose();
-            } catch {
-              toast.error("Could not dismiss");
-            }
+          onClick={() => {
+            dismiss.mutate(undefined, {
+              onSuccess: () => {
+                toast.success("Notice dismissed");
+                onClose();
+              },
+            });
           }}
         >
           Dismiss

@@ -5,7 +5,6 @@ import { SendIcon } from "lucide-react";
 import { toast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
-import { FormStatus } from "@/components/ui/FormStatus";
 import { Input } from "@/components/ui/input";
 import { PageLoadingSkeleton } from "@/components/ui/PageLoadingSkeleton";
 import { PasswordInput } from "@/components/ui/password-input";
@@ -25,9 +24,7 @@ const NONE = "none";
 function Form({ initial }: { initial: MailSettings }) {
   const update = useUpdateMailSettings();
   const sendTest = useSendTestEmail();
-  const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  const [saved, setSaved] = useState(false);
   const [testTo, setTestTo] = useState("");
 
   const [values, setValues] = useState({
@@ -46,9 +43,7 @@ function Form({ initial }: { initial: MailSettings }) {
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
-    setError(null);
     setFieldErrors({});
-    setSaved(false);
 
     try {
       await update.mutateAsync({
@@ -61,34 +56,27 @@ function Form({ initial }: { initial: MailSettings }) {
         ...(newPassword ? { mail_password: newPassword } : {}),
       });
       setNewPassword("");
-      setSaved(true);
+      toast.success("Email settings saved");
     } catch (caught) {
+      // The failure toast is fired by the global mutation handler; here we
+      // only fan the server's field errors out under their inputs.
       if (caught instanceof ApiError) {
         setFieldErrors(
           Object.fromEntries(Object.entries(caught.errors ?? {}).map(([f, m]) => [f, m[0]])),
         );
-        setError(caught.message);
-      } else {
-        setError("Something went wrong. Please try again.");
       }
     }
   }
 
-  async function handleTest() {
+  function handleTest() {
     if (!testTo.trim()) return;
-    try {
-      await sendTest.mutateAsync(testTo.trim());
-      toast.success(`Test email sent to ${testTo.trim()}.`);
-    } catch (caught) {
-      toast.error(caught instanceof ApiError ? caught.message : "Couldn't send the test email.");
-    }
+    const to = testTo.trim();
+    sendTest.mutate(to, { onSuccess: () => toast.success(`Test email sent to ${to}.`) });
   }
 
   return (
     <div className="space-y-6">
       <form onSubmit={handleSubmit} className="space-y-4">
-        <FormStatus error={error} saved={saved} />
-
         <div className="grid gap-4 sm:grid-cols-2">
           <FormField label="From name" htmlFor="mail_from_name" error={fieldErrors.mail_from_name}>
             <Input

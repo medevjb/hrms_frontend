@@ -1,9 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { AlertCircleIcon } from "lucide-react";
 import { toast } from "@/components/ui/toast";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -23,7 +21,6 @@ function Form({ balance, onClose }: { balance: LeaveBalance; onClose: () => void
   const adjust = useAdjustLeaveBalance(balance.id);
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
-  const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const parsed = Number(amount);
@@ -31,7 +28,6 @@ function Form({ balance, onClose }: { balance: LeaveBalance; onClose: () => void
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
-    setError(null);
     setFieldErrors({});
     if (!valid) return;
 
@@ -40,26 +36,18 @@ function Form({ balance, onClose }: { balance: LeaveBalance; onClose: () => void
       toast.success("Balance adjusted");
       onClose();
     } catch (caught) {
+      // The failure toast is fired by the global mutation handler; here we
+      // only fan the server's field errors out under their inputs.
       if (caught instanceof ApiError) {
         setFieldErrors(
           Object.fromEntries(Object.entries(caught.errors ?? {}).map(([f, m]) => [f, m[0]])),
         );
-        setError(caught.message);
-      } else {
-        setError("Something went wrong. Please try again.");
       }
     }
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {error && (
-        <Alert variant="destructive">
-          <AlertCircleIcon />
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-
       <div className="rounded-lg border border-border bg-muted/40 p-3 text-sm">
         <p className="font-medium">{balance.leave_type.name}</p>
         <p className="text-muted-foreground">

@@ -81,6 +81,7 @@ export function EmployeeDetail({ employeeId }: { employeeId: number }) {
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [reason, setReason] = useState("");
   const [pendingStatus, setPendingStatus] = useState<EmployeeStatus | null>(null);
+  const [statusConfirmOpen, setStatusConfirmOpen] = useState(false);
 
   const [overrideShiftId, setOverrideShiftId] = useState<string | null>(null);
   const [overrideDate, setOverrideDate] = useState<string | null>(null);
@@ -130,7 +131,6 @@ export function EmployeeDetail({ employeeId }: { employeeId: number }) {
           toast.success("Employee transferred");
           setTeamChoice(null);
         },
-        onError: () => toast.error("Transfer failed. Try again."),
         onSettled: () => setPendingTeamId(null),
       },
     );
@@ -145,7 +145,6 @@ export function EmployeeDetail({ employeeId }: { employeeId: number }) {
           toast.success("Regular shift updated");
           setShiftChoice(null);
         },
-        onError: () => toast.error("Couldn't assign that shift. Try again."),
         onSettled: () => setPendingShiftId(null),
       },
     );
@@ -161,7 +160,7 @@ export function EmployeeDetail({ employeeId }: { employeeId: number }) {
           setReason("");
           setPendingStatus(null);
         },
-        onError: () => toast.error("Status update failed. Try again."),
+        onSettled: () => setStatusConfirmOpen(false),
       },
     );
   }
@@ -182,7 +181,6 @@ export function EmployeeDetail({ employeeId }: { employeeId: number }) {
           setOverrideDate(null);
           setOverrideReason("");
         },
-        onError: () => toast.error("Couldn't set the shift change. Try again."),
       },
     );
   }
@@ -260,7 +258,6 @@ export function EmployeeDetail({ employeeId }: { employeeId: number }) {
                   onClick={() =>
                     resendInvitation.mutate(employeeId, {
                       onSuccess: () => toast.success(`Invitation resent to ${employee.email}`),
-                      onError: () => toast.error("Couldn't resend the invitation. Try again."),
                     })
                   }
                 >
@@ -488,7 +485,6 @@ export function EmployeeDetail({ employeeId }: { employeeId: number }) {
                             { weekend_day: value === "default" ? null : (value as Weekday) },
                             {
                               onSuccess: () => toast.success("Weekly off updated"),
-                              onError: () => toast.error("Couldn't update the weekly off. Try again."),
                             },
                           )
                         }
@@ -632,7 +628,7 @@ export function EmployeeDetail({ employeeId }: { employeeId: number }) {
 
                   <Button
                     variant={pendingStatus === "TERMINATED" ? "destructive" : "default"}
-                    onClick={submitStatusChange}
+                    onClick={() => setStatusConfirmOpen(true)}
                     disabled={!pendingStatus || !reason.trim() || updateStatus.isPending}
                   >
                     {updateStatus.isPending ? "Updating…" : "Update status"}
@@ -643,6 +639,36 @@ export function EmployeeDetail({ employeeId }: { employeeId: number }) {
           </Tabs>
         </div>
       </div>
+
+      <AlertDialog
+        open={statusConfirmOpen}
+        onOpenChange={(open) => !open && !updateStatus.isPending && setStatusConfirmOpen(false)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Change {employee.full_name}&apos;s status to{" "}
+              {STATUS_OPTIONS.find((option) => option.value === pendingStatus)?.label ?? pendingStatus}?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This is saved to the status history and audit log
+              {pendingStatus === "TERMINATED" || pendingStatus === "SUSPENDED"
+                ? ", and revokes system access straight away"
+                : ""}
+              .
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={updateStatus.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={submitStatusChange}
+              variant={pendingStatus === "TERMINATED" ? "destructive" : "default"}
+            >
+              Change status
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog
         open={pendingTeamId !== null}

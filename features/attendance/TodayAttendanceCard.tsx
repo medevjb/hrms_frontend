@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusChip, type StatusTone } from "@/components/ui/status-chip";
 import { useCurrentUser } from "@/features/auth/CurrentUserContext";
-import { ApiError } from "@/lib/api-error";
 import { formatTimeInTimezone } from "@/lib/format-time";
 import { useAttendanceToday, useCheckIn, useCheckOut } from "@/services/attendance";
 import type { AttendanceStatus } from "@/types/attendance";
@@ -57,22 +56,14 @@ export function TodayAttendanceCard() {
     return null;
   }
 
-  async function handleCheckIn() {
-    try {
-      await checkIn.mutateAsync();
-      toast.success("Checked in");
-    } catch (caught) {
-      toast.error(caught instanceof ApiError ? caught.message : "Check-in failed");
-    }
+  function handleCheckIn() {
+    checkIn.mutate(undefined, { onSuccess: () => toast.success("Checked in") });
   }
 
-  async function handleCheckOut() {
-    try {
-      await checkOut.mutateAsync();
-      toast.success("Checked out successfully");
-    } catch (caught) {
-      toast.error(caught instanceof ApiError ? caught.message : "Check-out failed");
-    }
+  function handleCheckOut() {
+    checkOut.mutate(undefined, {
+      onSuccess: () => toast.success("Checked out successfully"),
+    });
   }
 
   const checkedInAt = record?.check_in ? parseISO(record.check_in) : null;

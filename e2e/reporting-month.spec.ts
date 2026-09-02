@@ -17,7 +17,7 @@ test.afterEach(async ({ page }) => {
   await page.getByRole("tab", { name: "Organization" }).click();
   await page.getByLabel("Reporting month cut-off day").fill("");
   await page.getByRole("button", { name: "Save changes" }).click();
-  await expect(page.getByText("Saved")).toBeVisible();
+  await expect(page.getByText("Organization settings saved")).toBeVisible();
 });
 
 test("a custom reporting cut-off shifts the attendance calendar and reports", async ({ page }) => {
@@ -26,7 +26,7 @@ test("a custom reporting cut-off shifts the attendance calendar and reports", as
 
   await page.getByLabel("Reporting month cut-off day").fill("25");
   await page.getByRole("button", { name: "Save changes" }).click();
-  await expect(page.getByText("Saved")).toBeVisible();
+  await expect(page.getByText("Organization settings saved")).toBeVisible();
 
   // The live current-period line reflects the new boundaries.
   await expect(page.getByText(/Current reporting month:/)).toContainText("→");
